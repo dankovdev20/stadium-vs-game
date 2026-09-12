@@ -1,3 +1,4 @@
+import "./index.css";
 import Button from './components/common/Button';
 
 function App() {
