@@ -1,5 +1,6 @@
 import { Settings, Users, CircleDot } from "lucide-react";
 import Background from "../../assets/titleScreenScene2.png";
+import GameButton from "../../components/common/Button";
 
 interface StartScreenProps {
   onPlay?: () => void;
@@ -57,14 +58,9 @@ export default function StartScreen({
             </h1>
         </div>
 
-          <button
-            onClick={onPlay}
-            aria-label="Graj"
-            className="flex items-center gap-3 rounded-2xl border-b-[7px] border-[#C97F00] bg-[#FFC93C] px-12 py-4 font-[Poppins] text-2xl font-bold text-[#1B4332] transition-all duration-100 active:translate-y-[4px] active:border-b-[2px]"
-          >
-            <CircleDot size={26} strokeWidth={2.5} />
-            Zacznij grę
-          </button>
+            <GameButton onClick={onPlay} icon={CircleDot}>
+              Zacznij grę
+            </GameButton>
         </div>
       </div>
     </div>
