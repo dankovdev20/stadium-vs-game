@@ -1,6 +1,6 @@
 import { Settings, Users, CircleDot } from "lucide-react";
 import Background from "../../assets/titleScreenScene2.png";
-import GameButton from "../../components/common/Button";
+import GameButton from "./../../components/ui/Button";
 
 interface StartScreenProps {
   onPlay?: () => void;
@@ -24,7 +24,6 @@ export default function StartScreen({
         className="absolute inset-0 h-full w-full object-cover object-center"
       />
 
-      
       {/* Atrybucja — lewy dolny róg */}
       <div className="absolute bottom-5 left-5 z-10 font-[Poppins] text-xs font-semibold text-white/70">
         © 2026 Your Studio Name
@@ -54,13 +53,13 @@ export default function StartScreen({
         <div className="-mt-20 flex flex-col items-center gap-10">
           <div className="rounded-3xl border border-white/10 bg-black/10 p-8 backdrop-blur-xs shadow-2xl">
             <h1 className="text-center font-[Anton] text-6xl uppercase tracking-wide text-white drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] sm:text-7xl">
-                Penalty Showdown
+              Penalty Showdown
             </h1>
-        </div>
+          </div>
 
-            <GameButton onClick={onPlay} icon={CircleDot}>
-              Zacznij grę
-            </GameButton>
+          <GameButton onClick={onPlay} icon={CircleDot}>
+            Zacznij grę
+          </GameButton>
         </div>
       </div>
     </div>
