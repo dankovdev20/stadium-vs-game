@@ -1,6 +1,7 @@
 import { Settings, Users, CircleDot } from "lucide-react";
 import Background from "../../assets/titleScreenScene2.png";
 import GameButton from "./../../components/ui/Button";
+import { useGameEmit } from "../../game/GameContext";
 
 interface StartScreenProps {
   onPlay?: () => void;
@@ -13,6 +14,7 @@ export default function StartScreen({
   onOpenSettings,
   onOpenAuthors,
 }: StartScreenProps) {
+    const emit = useGameEmit();
   return (
     <div className="relative min-h-[100dvh] w-full overflow-hidden bg-[#2B8A3E]">
       <img
@@ -57,7 +59,7 @@ export default function StartScreen({
             </h1>
           </div>
 
-          <GameButton onClick={onPlay} icon={CircleDot}>
+          <GameButton onClick={() => emit("game:search")} icon={CircleDot}>
             Zacznij grę
           </GameButton>
         </div>
