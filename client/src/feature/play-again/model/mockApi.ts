@@ -7,7 +7,7 @@ import type { GameResultData } from "./types";
 // }
 export async function fetchGameResult(): Promise<GameResultData> {
   return {
-    isWinner: false,
+    isWinner: true,
     winnerName: "Player 1",
     readyCount: 1,
     totalPlayers: 2,

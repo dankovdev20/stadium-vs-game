@@ -50,7 +50,7 @@ export default function StartScreen({
 
       {/* Centralny blok */}
       <div className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-center px-4">
-        <div className="-mt-20 flex flex-col items-center gap-10">
+        <div className="-mt-20 flex flex-col min-h-72 items-center gap-10">
           <div className="rounded-3xl border border-white/10 bg-black/10 p-8 backdrop-blur-xs shadow-2xl">
             <h1 className="text-center font-[Anton] text-6xl uppercase tracking-wide text-white drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] sm:text-7xl">
               Penalty Showdown
