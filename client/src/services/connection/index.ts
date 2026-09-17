@@ -1,7 +1,7 @@
 import { mockConnection } from "./mockConnection";
-// import { createSocketConnection } from "./socketConnection"; // раскомментировать когда бэкенд готов
+import { createSocketConnection } from "./socketConnection";
 
 export function createConnection() {
-  return mockConnection;
-  // return createSocketConnection(import.meta.env.VITE_WS_URL);
+  const wsUrl = import.meta.env.VITE_WS_URL as string | undefined;
+  return wsUrl ? createSocketConnection(wsUrl) : mockConnection;
 }
