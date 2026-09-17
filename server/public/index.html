@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Stadium VS - Test Klienta</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .card {
+            background: #2a2a2a;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+
+        button {
+            padding: 12px 20px;
+            margin: 5px;
+            font-size: 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            border: none;
+            font-weight: bold;
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .btn-zone {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-action {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-role {
+            background: #6f42c1;
+            color: white;
+            font-size: 16px;
+        }
+
+        .btn-reset {
+            background: #dc3545;
+            color: white;
+            float: right;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .badge-role {
+            background: #17a2b8;
+        }
+
+        .log-box {
+            background: #000;
+            color: #00ff66;
+            padding: 10px;
+            font-family: monospace;
+            height: 140px;
+            overflow-y: scroll;
+            border-radius: 4px;
+        }
+
+        .status-msg {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffc107;
+            margin-top: 10px;
+        }
+
+        .game-over-box {
+            background: #343a40;
+            border: 2px solid #28a745;
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+
+    <button class="btn-reset" onclick="hardReset()">Pełny Reset Pokoju</button>
+    <h1>Stadium 1v1 - Panel Testowy</h1>
+
+    <div class="card">
+        <h3>Twoja rola: <span id="myRole" class="badge badge-role">Nie wybrano</span></h3>
+        <p>Stan gry: <b id="gameState">-</b> | Runda: <b id="gameRound">-</b>/10 | Wynik: P1: <b id="scoreP1">0</b> -
+            P2: <b id="scoreP2">0</b></p>
+    </div>
+
+    <!-- Sekcja 0: Wybór Roli (LOBBY) -->
+    <div id="sectionLobby" class="card" style="display: none;">
+        <h3>Wybierz swoje stanowisko:</h3>
+        <button id="btnRoleP1" class="btn-role" onclick="selectRole('player_1')">Wybierz: Gracz 1</button>
+        <button id="btnRoleP2" class="btn-role" onclick="selectRole('player_2')">Wybierz: Gracz 2</button>
+        <p id="lobbyStatus" class="status-msg">Oczekiwanie na wybór stanowiska...</p>
+    </div>
+
+    <!-- Sekcja 1: Tworzenie Postaci -->
+    <div id="sectionCustomization" class="card" style="display: none;">
+        <h3>Krok 1: Wybór Postaci</h3>
+        <p>Wybierz robota i kliknij Zatwierdź:</p>
+        <button id="btnCharA" class="btn-action" onclick="submitCharacter(1, 1, 1)">Zatwierdź Robota Czerwonego</button>
+        <button id="btnCharB" class="btn-action" onclick="submitCharacter(2, 3, 2)">Zatwierdź Robota
+            Niebieskiego</button>
+        <p id="customStatus" class="status-msg"></p>
+    </div>
+
+    <!-- Sekcja 2: Rzuty Karne -->
+    <div id="sectionGame" class="card" style="display: none;">
+        <h2 id="roleBanner">Tura: -</h2>
+        <p>Wybierz strefę (1-5):</p>
+        <div id="zoneButtons">
+            <div>
+                <button class="btn-zone" onclick="chooseZone(1)">1: Góra-Lewo (2 pkt)</button>
+                <button class="btn-zone" onclick="chooseZone(2)">2: Góra-Środek (2 pkt)</button>
+                <button class="btn-zone" onclick="chooseZone(3)">3: Góra-Prawo (2 pkt)</button>
+            </div>
+            <div style="margin-top: 5px;">
+                <button class="btn-zone" onclick="chooseZone(4)">4: Dół-Lewo (1 pkt)</button>
+                <button class="btn-zone" onclick="chooseZone(5)">5: Dół-Prawo (1 pkt)</button>
+            </div>
+        </div>
+        <div id="choiceStatus" class="status-msg"></div>
+    </div>
+
+    <!-- Sekcja 3: Koniec Gry (GAME OVER) -->
+    <div id="sectionGameOver" class="card game-over-box" style="display: none;">
+        <h1 id="winnerText" style="color: #28a745; margin: 0 0 10px 0;">Koniec Meczu!</h1>
+        <h3 id="finalScoreText" style="margin-bottom: 20px;">Wynik końcowy: -</h3>
+        <button class="btn-action" style="font-size: 18px; padding: 15px 30px;" onclick="restartGame()">Zagraj Ponownie
+            (Nowa Gra)</button>
+    </div>
+
+    <div class="card">
+        <h4>Dziennik Zdarzeń:</h4>
+        <div id="logs" class="log-box"></div>
+    </div>
+
+    <script>
+        const socket = io();
+        let myRole = null;
+        let hasChosenThisRound = false;
+
+        function log(msg) {
+            const el = document.getElementById('logs');
+            el.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function setButtonsDisabled(disabled) {
+            const btns = document.querySelectorAll('#zoneButtons button');
+            btns.forEach(b => b.disabled = disabled);
+        }
+
+        socket.on('role:assigned', (data) => {
+            myRole = data.role;
+            document.getElementById('myRole').innerText = data.role;
+            log(`Pomyślnie wybrano: <b>${data.role}</b>`);
+        });
+
+        socket.on('room:error', (err) => {
+            log(`Błąd: ${err.message}`);
+        });
+
+        socket.on('state:sync', (state) => {
+            document.getElementById('gameState').innerText = state.state;
+            document.getElementById('gameRound').innerText = state.currentRound;
+            document.getElementById('scoreP1').innerText = state.scores.player_1;
+            document.getElementById('scoreP2').innerText = state.scores.player_2;
+
+            // 1. Ekran Lobby
+            if (state.state === 'LOBBY') {
+                document.getElementById('sectionLobby').style.display = 'block';
+                document.getElementById('sectionCustomization').style.display = 'none';
+                document.getElementById('sectionGame').style.display = 'none';
+                document.getElementById('sectionGameOver').style.display = 'none';
+
+                const btnP1 = document.getElementById('btnRoleP1');
+                const btnP2 = document.getElementById('btnRoleP2');
+
+                btnP1.style.display = (state.slots.player_1_taken && myRole !== 'player_1') ? 'none' : 'inline-block';
+                btnP2.style.display = (state.slots.player_2_taken && myRole !== 'player_2') ? 'none' : 'inline-block';
+
+                btnP1.disabled = (myRole === 'player_1');
+                btnP2.disabled = (myRole === 'player_2');
+
+                if (myRole) {
+                    document.getElementById('lobbyStatus').innerText = `Wybrałeś: ${myRole}. Oczekiwanie na drugiego gracza...`;
+                }
+            }
+
+            // 2. Ekran Tworzenia Postaci
+            if (state.state === 'CUSTOMIZATION') {
+                document.getElementById('sectionLobby').style.display = 'none';
+                document.getElementById('sectionCustomization').style.display = 'block';
+                document.getElementById('sectionGame').style.display = 'none';
+                document.getElementById('sectionGameOver').style.display = 'none';
+
+                // Rozblokowanie przycisków postaci dla nowej gry
+                document.getElementById('btnCharA').disabled = false;
+                document.getElementById('btnCharB').disabled = false;
+                document.getElementById('customStatus').innerText = 'Wybierz robota.';
+            }
+
+            // 3. Ekran Gry
+            if (state.state === 'PLAYING') {
+                document.getElementById('sectionCustomization').style.display = 'none';
+                document.getElementById('sectionGame').style.display = 'block';
+                document.getElementById('sectionGameOver').style.display = 'none';
+
+                const isStriker = (state.strikerRole === myRole);
+                document.getElementById('roleBanner').innerText = isStriker ? 'Twoja rola: NAPASTNIK (Strzelaj!)' : 'Twoja rola: BRAMKARZ (Broń!)';
+                document.getElementById('roleBanner').style.color = isStriker ? '#28a745' : '#17a2b8';
+
+                const iHaveChosen = (myRole === 'player_1' && state.choicesStatus.player_1_chosen) ||
+                    (myRole === 'player_2' && state.choicesStatus.player_2_chosen);
+
+                hasChosenThisRound = iHaveChosen;
+                setButtonsDisabled(iHaveChosen);
+
+                const opponentRole = myRole === 'player_1' ? 'player_2' : 'player_1';
+                const opponentChosen = (opponentRole === 'player_1' && state.choicesStatus.player_1_chosen) ||
+                    (opponentRole === 'player_2' && state.choicesStatus.player_2_chosen);
+
+                if (!iHaveChosen && opponentChosen) {
+                    document.getElementById('choiceStatus').innerText = 'Rywal podjął decyzję! Twój ruch!';
+                } else if (!iHaveChosen && !opponentChosen) {
+                    document.getElementById('choiceStatus').innerText = 'Wybierz strefę.';
+                }
+            }
+
+            if (state.state === 'ROUND_RESULT') {
+                setButtonsDisabled(true);
+            }
+
+            // 4. Koniec Gry
+            if (state.state === 'GAME_OVER') {
+                document.getElementById('sectionGame').style.display = 'none';
+                document.getElementById('sectionCustomization').style.display = 'none';
+                document.getElementById('sectionGameOver').style.display = 'block';
+            }
+        });
+
+        socket.on('round:choice_made', (data) => {
+            if (data.role === myRole) {
+                document.getElementById('choiceStatus').innerText = 'Twój wybór zapisany! Oczekiwanie na rywala...';
+            } else {
+                document.getElementById('choiceStatus').innerText = 'Rywal podjął decyzję! Twój ruch!';
+            }
+        });
+
+        socket.on('round:resolved', (data) => {
+            setButtonsDisabled(true);
+            log(`<b>WYNIK:</b> Strzał: [${data.strikerZone}], Obrona: [${data.keeperZone}] -> <b>${data.result.outcome}</b> (${data.result.details})`);
+            document.getElementById('choiceStatus').innerText = `Wynik: ${data.result.outcome}!`;
+        });
+
+        socket.on('game:over', (data) => {
+            const winnerName = data.winner === 'REMIS' ? 'REMIS!' : (data.winner === 'player_1' ? 'WYGRAŁ GRACZ 1!' : 'WYGRAŁ GRACZ 2!');
+            document.getElementById('winnerText').innerText = winnerName;
+            document.getElementById('finalScoreText').innerText = `Wynik końcowy: Gracz 1 (${data.scores.player_1} pkt) — Gracz 2 (${data.scores.player_2} pkt)`;
+            log(`<b>Koniec gry!</b> ${winnerName} (${data.scores.player_1} : ${data.scores.player_2})`);
+        });
+
+        // Полный сброс комнаты
+        socket.on('room:hard_reset', () => {
+            myRole = null;
+            document.getElementById('myRole').innerText = 'Nie wybrano';
+            log('Pokój został całkowicie zresetowany.');
+        });
+
+        function selectRole(role) {
+            socket.emit('player:select_role', role);
+        }
+
+        function submitCharacter(h, b, l) {
+            socket.emit('character:submit', { headId: h, bodyId: b, legsId: l });
+            document.getElementById('btnCharA').disabled = true;
+            document.getElementById('btnCharB').disabled = true;
+            document.getElementById('customStatus').innerText = 'Zapisano! Oczekiwanie na rywala...';
+        }
+
+        function chooseZone(zoneId) {
+            if (hasChosenThisRound) return;
+            hasChosenThisRound = true;
+            setButtonsDisabled(true);
+            socket.emit('game:choose_zone', zoneId);
+            document.getElementById('choiceStatus').innerText = `Wybrano strefę ${zoneId}...`;
+        }
+
+        function restartGame() {
+            socket.emit('game:restart');
+        }
+
+        function hardReset() {
+            socket.emit('room:force_reset');
+        }
+    </script>
+</body>
+
+</html>
