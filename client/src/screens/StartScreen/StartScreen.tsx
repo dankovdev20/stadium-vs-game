@@ -36,7 +36,7 @@ export default function StartScreen({
         <button
           onClick={onOpenSettings}
           aria-label="Ustawienia"
-          className="flex h-14 w-14 items-center justify-center rounded-2xl border-b-[5px] border-[#C9C4B4] bg-[#F1EFE7] text-[#1B4332] transition-all duration-100 active:translate-y-[3px] active:border-b-[2px]"
+          className="flex h-14 w-14 cursor-pointer select-none items-center justify-center rounded-2xl border-b-[5px] border-[#C9C4B4] bg-[#F1EFE7] text-[#1B4332] transition-all duration-100 active:translate-y-[3px] active:border-b-[2px]"
         >
           <Settings size={24} strokeWidth={2.5} />
         </button>
@@ -44,7 +44,7 @@ export default function StartScreen({
         <button
           onClick={onOpenAuthors}
           aria-label="Autorzy"
-          className="flex h-14 w-14 items-center justify-center rounded-2xl border-b-[5px] border-[#C9C4B4] bg-[#F1EFE7] text-[#1B4332] transition-all duration-100 active:translate-y-[3px] active:border-b-[2px]"
+          className="flex h-14 w-14 cursor-pointer select-none items-center justify-center rounded-2xl border-b-[5px] border-[#C9C4B4] bg-[#F1EFE7] text-[#1B4332] transition-all duration-100 active:translate-y-[3px] active:border-b-[2px]"
         >
           <Users size={24} strokeWidth={2.5} />
         </button>

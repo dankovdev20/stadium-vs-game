@@ -40,7 +40,7 @@ export function usePlayAgainModal() {
         pauseOnHover: false,
         onClose: () => setIsOpen(false), // фон разблюривается, когда тост закрылся
         className:
-          "!bg-white !rounded-2xl !p-0 !max-w-lg !w-96 shadow-2xl overflow-hidden mt-12",
+          "!bg-white !rounded-2xl !p-0 !w-[40rem] !max-w-[calc(100vw-2rem)] shadow-2xl overflow-hidden mt-12",
       },
     );
   }, []);
