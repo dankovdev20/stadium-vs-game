@@ -24,17 +24,17 @@ export function DevPanel() {
       <div className="mb-2 flex flex-col gap-1">
         <div className="font-bold text-white/70">player:select_role</div>
         <div className="flex gap-1">
-          <button onClick={() => emit("player:select_role", "player_1")} className="flex-1 rounded bg-white/10 px-2 py-1 hover:bg-white/20">
+          <button onClick={() => emit("player:select_role", "player_1")} className="flex-1 cursor-pointer select-none rounded-lg border-b-2 border-white/20 bg-white/10 px-2 py-1 transition-all duration-100 active:translate-y-0.5 active:border-b-0 hover:bg-white/20">
             Gracz 1
           </button>
-          <button onClick={() => emit("player:select_role", "player_2")} className="flex-1 rounded bg-white/10 px-2 py-1 hover:bg-white/20">
+          <button onClick={() => emit("player:select_role", "player_2")} className="flex-1 cursor-pointer select-none rounded-lg border-b-2 border-white/20 bg-white/10 px-2 py-1 transition-all duration-100 active:translate-y-0.5 active:border-b-0 hover:bg-white/20">
             Gracz 2
           </button>
         </div>
 
         <button
           onClick={() => emit("character:submit", { headId: 1, bodyId: 1, legsId: 1 })}
-          className="rounded bg-white/10 px-2 py-1 text-left hover:bg-white/20"
+          className="cursor-pointer select-none rounded-lg border-b-2 border-white/20 bg-white/10 px-2 py-1 text-left transition-all duration-100 active:translate-y-0.5 active:border-b-0 hover:bg-white/20"
         >
           character:submit (dummy)
         </button>
@@ -42,16 +42,16 @@ export function DevPanel() {
         <div className="mt-1 font-bold text-white/70">game:choose_zone</div>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((z) => (
-            <button key={z} onClick={() => emit("game:choose_zone", z)} className="flex-1 rounded bg-white/10 py-1 hover:bg-white/20">
+            <button key={z} onClick={() => emit("game:choose_zone", z)} className="flex-1 cursor-pointer select-none rounded-lg border-b-2 border-white/20 bg-white/10 py-1 transition-all duration-100 active:translate-y-0.5 active:border-b-0 hover:bg-white/20">
               {z}
             </button>
           ))}
         </div>
 
-        <button onClick={() => emit("game:restart")} className="mt-1 rounded bg-white/10 px-2 py-1 text-left hover:bg-white/20">
+        <button onClick={() => emit("game:restart")} className="mt-1 cursor-pointer select-none rounded-lg border-b-2 border-white/20 bg-white/10 px-2 py-1 text-left transition-all duration-100 active:translate-y-0.5 active:border-b-0 hover:bg-white/20">
           game:restart
         </button>
-        <button onClick={() => emit("room:force_reset")} className="rounded bg-red-500/30 px-2 py-1 text-left hover:bg-red-500/50">
+        <button onClick={() => emit("room:force_reset")} className="cursor-pointer select-none rounded-lg border-b-2 border-red-900/60 bg-red-500/30 px-2 py-1 text-left transition-all duration-100 active:translate-y-0.5 active:border-b-0 hover:bg-red-500/50">
           room:force_reset (полный сброс)
         </button>
       </div>

@@ -3,6 +3,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { usePlayAgainModal } from "./feature/play-again/model/usePlayAgainModal";
 import StartScreen from "./screens/StartScreen/StartScreen";
+import GameScreen from "./screens/GameScreen/GameScreen";
 import { useGameState, useGamePhase, useGameEmit } from "./game/GameContext";
 import { DevPanel } from "./dev/devPanel";
 
@@ -23,12 +24,15 @@ export default function App() {
     }
   }, [lastGameOver, showPlayAgainModal, emit]);
 
+  // PLAYING и ROUND_RESULT — один и тот же экран: сцена не размонтируется
+  // между выбором зоны и показом серверного результата.
+  const isMatchScreen = phase === "PLAYING" || phase === "ROUND_RESULT";
+
   return (
     <>
       {phase === "LOBBY" && <div className="p-8 text-center">Экран выбора терминала (заглушка)</div>}
       {phase === "CUSTOMIZATION" && <div className="p-8 text-center">Конструктор персонажа (заглушка)</div>}
-      {phase === "PLAYING" && <div className="p-8 text-center">Экран выбора зоны (заглушка)</div>}
-      {phase === "ROUND_RESULT" && <div className="p-8 text-center">Экран результата раунда (заглушка)</div>}
+      {isMatchScreen && <GameScreen />}
       {phase === "GAME_OVER" && <div className="p-8 text-center">Финальный счёт (заглушка)</div>}
       {phase === "PAUSED_DISCONNECT" && <div className="p-8 text-center text-red-600">Соперник отключился</div>}
 
