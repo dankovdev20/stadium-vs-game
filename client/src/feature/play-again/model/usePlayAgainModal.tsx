@@ -1,49 +1,33 @@
 import { useCallback, useState } from "react";
 import { toast } from "react-toastify";
 import PlayAgainModal from "../ui/PlayAgainModal";
-import { fetchGameResult } from "./mockApi";
 
 const TOAST_ID = "play-again-modal";
 
+// Тонкая обёртка над react-toastify: сам компонент PlayAgainModal —
+// самодостаточный подписчик на GameContext (см. его комментарий), поэтому
+// здесь не нужно прокидывать никакие данные — только открыть/закрыть тост.
 export function usePlayAgainModal() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const showPlayAgainModal = useCallback(async (onPlayAgain: () => void) => {
-    let data;
-    try {
-      data = await fetchGameResult();
-    } catch (e) {
-      console.error("Не удалось получить результат игры", e);
-      return;
-    }
-
+  const showPlayAgainModal = useCallback(() => {
     setIsOpen(true);
-
-    toast(
-      () => (
-        <PlayAgainModal
-          isWinner={data.isWinner}
-          winnerName={data.winnerName}
-          readyCount={data.readyCount}
-          totalPlayers={data.totalPlayers}
-          duration={data.duration}
-          onPlayAgain={onPlayAgain}
-        />
-      ),
-      {
-        toastId: TOAST_ID,
-        position: "top-center",
-        autoClose: data.duration * 1000,
-        hideProgressBar: true,
-        closeOnClick: false,
-        closeButton: false,
-        pauseOnHover: false,
-        onClose: () => setIsOpen(false), // фон разблюривается, когда тост закрылся
-        className:
-          "!bg-white !rounded-2xl !p-0 !max-w-lg !w-96 shadow-2xl overflow-hidden mt-12",
-      },
-    );
+    toast(() => <PlayAgainModal />, {
+      toastId: TOAST_ID,
+      position: "top-center",
+      autoClose: false, // закрываем сами, когда сервер уводит фазу с GAME_OVER
+      hideProgressBar: true,
+      closeOnClick: false,
+      closeButton: false,
+      pauseOnHover: false,
+      onClose: () => setIsOpen(false),
+      className: "!bg-white !rounded-2xl !p-0 !max-w-lg !w-96 shadow-2xl overflow-hidden mt-12",
+    });
   }, []);
 
-  return { showPlayAgainModal, isOpen };
+  const hidePlayAgainModal = useCallback(() => {
+    toast.dismiss(TOAST_ID);
+  }, []);
+
+  return { showPlayAgainModal, hidePlayAgainModal, isOpen };
 }

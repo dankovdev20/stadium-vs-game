@@ -1,11 +1,16 @@
 import { type GameConnection } from "./types";
-import type { StateSyncPayload, PlayerRole } from "../../game/types";
+import type { StateSyncPayload, PlayerRole, CharacterSelection } from "../../game/types";
 
 type Handler = (payload?: any) => void;
+
+const RESTART_VOTE_TIMEOUT_MS = 10000;
+// Заглушка для персонажа "соперника", которого эмулирует мок (см. selectRole).
+const FALLBACK_CHARACTER: CharacterSelection = { headId: 1, bodyId: 1, legsId: 1 };
 
 class MockConnection implements GameConnection {
   private listeners = new Map<string, Set<Handler>>();
   private myRole: PlayerRole | null = null;
+  private restartTimer: ReturnType<typeof setTimeout> | null = null;
   private sync: StateSyncPayload = {
     state: "LOBBY",
     currentRound: 1,
@@ -15,6 +20,8 @@ class MockConnection implements GameConnection {
     slots: { player_1_taken: false, player_2_taken: false },
     choicesStatus: { player_1_chosen: false, player_2_chosen: false },
     scores: { player_1: 0, player_2: 0 },
+    characters: { player_1: null, player_2: null },
+    restart: { player_1_ready: false, player_2_ready: false, deadline: null },
   };
 
   connect() {
@@ -41,7 +48,7 @@ class MockConnection implements GameConnection {
   emit(event: string, payload?: any) {
     console.log("[mock] emit:", event, payload);
     if (event === "player:select_role") return this.selectRole(payload);
-    if (event === "character:submit") return this.submitCharacter();
+    if (event === "character:submit") return this.submitCharacter(payload);
     if (event === "game:choose_zone") return this.chooseZone(payload);
     if (event === "game:restart") return this.restart();
     if (event === "room:force_reset") return this.hardReset();
@@ -63,8 +70,14 @@ class MockConnection implements GameConnection {
     this.pushSync();
   }
 
-  private submitCharacter() {
+  private submitCharacter(character: CharacterSelection) {
+    if (!this.myRole) return;
+    this.sync.characters = { ...this.sync.characters, [this.myRole]: character };
+    this.pushSync();
+
+    const other: PlayerRole = this.myRole === "player_1" ? "player_2" : "player_1";
     setTimeout(() => {
+      this.sync.characters = { ...this.sync.characters, [other]: FALLBACK_CHARACTER };
       this.sync.state = "PLAYING";
       this.pushSync();
     }, 800);
@@ -104,6 +117,8 @@ class MockConnection implements GameConnection {
 
         if (this.sync.currentRound > this.sync.totalRounds) {
           this.sync.state = "GAME_OVER";
+          this.sync.restart = { player_1_ready: false, player_2_ready: false, deadline: Date.now() + RESTART_VOTE_TIMEOUT_MS };
+          this.restartTimer = setTimeout(() => this.hardReset(), RESTART_VOTE_TIMEOUT_MS);
           const { player_1, player_2 } = this.sync.scores;
           const winner = player_1 === player_2 ? "REMIS" : player_1 > player_2 ? "player_1" : "player_2";
           this.trigger("game:over", { winner, scores: this.sync.scores });
@@ -115,12 +130,50 @@ class MockConnection implements GameConnection {
     }, 600);
   }
 
+  // Голос за рестарт: как и на сервере, нужны ОБА. Второго игрока эмулируем
+  // (как и подсадку в лобби) — сама механика "ждём обоих / иначе таймаут"
+  // остаётся честной для соло-разработчика.
   private restart() {
-    this.sync = { ...this.sync, state: "CUSTOMIZATION", currentRound: 1, scores: { player_1: 0, player_2: 0 } };
+    if (!this.myRole || this.sync.state !== "GAME_OVER") return;
+    if (this.sync.restart[`${this.myRole}_ready`]) return;
+
+    this.sync.restart = { ...this.sync.restart, [`${this.myRole}_ready`]: true };
+    this.pushSync();
+
+    const other: PlayerRole = this.myRole === "player_1" ? "player_2" : "player_1";
+    if (this.sync.restart[`${other}_ready`]) {
+      this.confirmRestart();
+    } else {
+      setTimeout(() => {
+        if (this.sync.state !== "GAME_OVER") return;
+        this.sync.restart = { ...this.sync.restart, [`${other}_ready`]: true };
+        this.pushSync();
+        this.confirmRestart();
+      }, 800);
+    }
+  }
+
+  private confirmRestart() {
+    if (this.restartTimer) {
+      clearTimeout(this.restartTimer);
+      this.restartTimer = null;
+    }
+    this.sync = {
+      ...this.sync,
+      state: "CUSTOMIZATION",
+      currentRound: 1,
+      scores: { player_1: 0, player_2: 0 },
+      characters: { player_1: null, player_2: null },
+      restart: { player_1_ready: false, player_2_ready: false, deadline: null },
+    };
     this.pushSync();
   }
 
   private hardReset() {
+    if (this.restartTimer) {
+      clearTimeout(this.restartTimer);
+      this.restartTimer = null;
+    }
     this.myRole = null;
     this.sync = {
       state: "LOBBY", currentRound: 1, totalRounds: 10,
@@ -128,6 +181,8 @@ class MockConnection implements GameConnection {
       slots: { player_1_taken: false, player_2_taken: false },
       choicesStatus: { player_1_chosen: false, player_2_chosen: false },
       scores: { player_1: 0, player_2: 0 },
+      characters: { player_1: null, player_2: null },
+      restart: { player_1_ready: false, player_2_ready: false, deadline: null },
     };
     this.trigger("room:hard_reset");
     this.pushSync();
