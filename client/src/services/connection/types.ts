@@ -4,4 +4,5 @@ export interface GameConnection {
   on(event: string, handler: (payload?: any) => void): void;
   off(event: string, handler: (payload?: any) => void): void;
   emit(event: string, payload?: any): void;
+  getId?: () => string | undefined;
 }

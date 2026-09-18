@@ -1,33 +1,23 @@
-import { type GameState, type ServerEvent } from "./types";
+import { type GameState, type ServerAction, initialGameState } from "./types";
 
-export const initialGameState: GameState = {
-  phase: "start",
-  role: null,
-  score: { player_1: 0, player_2: 0 },
-  lastRound: null,
-};
-
-export function gameReducer(state: GameState, event: ServerEvent): GameState {
-  switch (event.type) {
-    case "player:joined":
-      return { ...state, role: event.payload.role, phase: "lobby" };
-    case "game:start":
-      return { ...state, phase: "pick" };
-    case "round:pick_phase":
-      return { ...state, phase: "pick" };
-    case "round:reveal":
-      return {
-        ...state,
-        phase: "reveal",
-        lastRound: event.payload,
-        score: event.payload.scored
-          ? { ...state.score, [state.role!]: state.score[state.role!] + 1 }
-          : state.score,
-      };
-    case "player:disconnected":
-      return { ...state, phase: "disconnected" };
-    case "game:end":
-      return { ...state, phase: "result" };
+export function gameReducer(state: GameState, action: ServerAction): GameState {
+  switch (action.type) {
+    case "state:sync":
+      return { ...state, sync: action.payload };
+    case "role:assigned":
+      return { ...state, myRole: action.payload!.role };
+    case "round:choice_made":
+      return { ...state, lastChoiceMade: action.payload };
+    case "round:resolved":
+      return { ...state, lastRoundResult: action.payload };
+    case "game:over":
+      return { ...state, lastGameOver: action.payload };
+    case "room:player_disconnected":
+      return { ...state, disconnectedInfo: action.payload };
+    case "room:error":
+      return { ...state, lastError: action.payload };
+    case "room:hard_reset":
+      return { ...initialGameState }; // ⚠️ важно: myRole тоже обнуляется, как требует спека
     default:
       return state;
   }
