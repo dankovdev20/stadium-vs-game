@@ -30,7 +30,10 @@ describe('2. Maszyna Stanów (gameRoom.js)', () => {
     let socket1;
     let socket2;
 
-    beforeEach(() => {
+    // handleSelectRole/handleCharacterReady uzbrajają idle-timer (90s) —
+    // mockujemy timery, żeby nie trzymać realnego zegara podczas testów.
+    beforeEach((t) => {
+        t.mock.timers.enable({ apis: ['setTimeout'] });
         io = new MockIO();
         room = new GameRoom(io);
         socket1 = new MockSocket('sock_1');
@@ -71,8 +74,79 @@ describe('2. Maszyna Stanów (gameRoom.js)', () => {
         assert.strictEqual(room.roundChoices.player_1, null);
         assert.strictEqual(room.state, GAME_STATES.PLAYING); // Gra nadal czeka na strzelca!
 
+        // KLUCZOWE: klient rozpoznaje "mój wybór zapisany" WYŁĄCZNIE po
+        // choicesStatus w state:sync — musi się zaktualizować od razu po
+        // JEDNYM wyborze, a nie dopiero gdy obaj skończą (inaczej przycisk
+        // nie blokuje się i cichy powtórny tap ginie bez żadnej reakcji).
+        const lastSync = room.io.broadcasts.filter((b) => b.event === 'state:sync').at(-1).data;
+        assert.strictEqual(lastSync.choicesStatus.player_2_chosen, true);
+        assert.strictEqual(lastSync.choicesStatus.player_1_chosen, false);
+
         // Teraz strzelec (player_1) wybiera cel
         room.handleMakeChoice(socket1, 1);
         assert.strictEqual(room.state, GAME_STATES.ROUND_RESULT); // Wybrali obaj -> rozstrzygnięcie
+    });
+});
+
+describe('3. Głosowanie "Zagraj ponownie" i auto-reset przy bezczynności (gameRoom.js)', () => {
+    let room;
+    let io;
+    let socket1;
+    let socket2;
+
+    // Mock-timery включаем ДО любых вызовов, которые могут завести setTimeout
+    // (armIdleTimer срабатывает уже на handleSelectRole) — иначе таймер на
+    // 90 сек уходит в реальность и держит процесс живым до своего срабатывания.
+    beforeEach((t) => {
+        t.mock.timers.enable({ apis: ['setTimeout'] });
+        io = new MockIO();
+        room = new GameRoom(io);
+        socket1 = new MockSocket('sock_1');
+        socket2 = new MockSocket('sock_2');
+        room.handleSelectRole(socket1, 'player_1');
+        room.handleSelectRole(socket2, 'player_2');
+    });
+
+    it('Obaj gracze potwierdzają przed upływem czasu -> natychmiastowy restart do CUSTOMIZATION', () => {
+        room.finishGame();
+        assert.strictEqual(room.state, GAME_STATES.GAME_OVER);
+
+        room.handleRestartGame(socket1);
+        assert.strictEqual(room.restartVotes.player_1, true);
+        assert.strictEqual(room.state, GAME_STATES.GAME_OVER); // wciąż czekamy na drugiego
+
+        room.handleRestartGame(socket2);
+        assert.strictEqual(room.state, GAME_STATES.CUSTOMIZATION); // obaj potwierdzili -> restart od razu
+        assert.strictEqual(room.restartTimer, null);
+    });
+
+    it('Potwierdza tylko jeden gracz -> po timeout pełny reset do LOBBY', (t) => {
+        room.finishGame();
+
+        room.handleRestartGame(socket1);
+        assert.strictEqual(room.state, GAME_STATES.GAME_OVER);
+
+        t.mock.timers.tick(10000);
+        assert.strictEqual(room.state, GAME_STATES.LOBBY);
+        assert.strictEqual(room.players.player_1, null);
+    });
+
+    it('LOBBY z jednym zajętym miejscem bez żadnej akcji -> auto-reset po czasie bezczynności', (t) => {
+        const idleRoom = new GameRoom(io);
+        const idleSocket = new MockSocket('sock_idle');
+        idleRoom.handleSelectRole(idleSocket, 'player_1');
+        assert.strictEqual(idleRoom.state, GAME_STATES.LOBBY);
+
+        t.mock.timers.tick(90000);
+        assert.strictEqual(idleRoom.players.player_1, null); // pokój zresetowany
+    });
+
+    it('Auto-reset przy bezczynności NIE działa w trakcie PLAYING', (t) => {
+        room.handleCharacterReady(socket1, { headId: 1, bodyId: 1, legsId: 1 });
+        room.handleCharacterReady(socket2, { headId: 1, bodyId: 1, legsId: 1 });
+        assert.strictEqual(room.state, GAME_STATES.PLAYING);
+
+        t.mock.timers.tick(90000);
+        assert.strictEqual(room.state, GAME_STATES.PLAYING); // mecz nie przerwany mimo symulowanego czasu
     });
 });

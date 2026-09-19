@@ -8,6 +8,22 @@ export type GamePhase =
 
 export type PlayerRole = "player_1" | "player_2";
 
+export interface RestartVoteStatus {
+  player_1_ready: boolean;
+  player_2_ready: boolean;
+  // epoch ms, когда откроется таймаут "Играть снова" -> LOBBY. null вне GAME_OVER.
+  deadline: number | null;
+}
+
+// Канонический тип payload'а character:submit — единственный источник
+// правды для формы сборки персонажа (голова/торс/ноги). Переиспользуется
+// и конструктором (feature/character-builder), и сценой матча (GameScreen).
+export interface CharacterSelection {
+  headId: number;
+  bodyId: number;
+  legsId: number;
+}
+
 export interface StateSyncPayload {
   state: GamePhase;
   currentRound: number;
@@ -17,6 +33,8 @@ export interface StateSyncPayload {
   slots: { player_1_taken: boolean; player_2_taken: boolean };
   choicesStatus: { player_1_chosen: boolean; player_2_chosen: boolean };
   scores: { player_1: number; player_2: number };
+  characters: { player_1: CharacterSelection | null; player_2: CharacterSelection | null };
+  restart: RestartVoteStatus;
 }
 
 export type RoundOutcome =

@@ -13,6 +13,15 @@ export const GAME_STATES = {
 const TOTAL_ROUNDS = 10;
 const RECONNECT_TIMEOUT_MS = 10000;
 
+// Сколько ждём подтверждения "Играть снова" от ОБОИХ игроков, прежде чем
+// сдаться и увести комнату обратно в LOBBY. Живая правка контракта —
+// см. shared/put_me_in_context.md, РАЗДЕЛ 7.
+const RESTART_VOTE_TIMEOUT_MS = 10000;
+
+// Выставочный формат: если комната застряла в LOBBY/CUSTOMIZATION (кто-то
+// зашёл и бросил), освобождаем стенд для следующих игроков.
+const IDLE_TIMEOUT_MS = 90000;
+
 export class GameRoom {
     constructor(io) {
         this.io = io;
@@ -25,6 +34,14 @@ export class GameRoom {
             clearTimeout(this.disconnectTimer);
             this.disconnectTimer = null;
         }
+        if (this.restartTimer) {
+            clearTimeout(this.restartTimer);
+            this.restartTimer = null;
+        }
+        if (this.idleTimer) {
+            clearTimeout(this.idleTimer);
+            this.idleTimer = null;
+        }
         this.state = GAME_STATES.LOBBY;
         this.players = {
             player_1: null,
@@ -34,6 +51,27 @@ export class GameRoom {
         this.strikerRole = 'player_1';
         this.keeperRole = 'player_2';
         this.roundChoices = { player_1: null, player_2: null };
+        this.restartVotes = { player_1: false, player_2: false };
+        this.restartDeadline = null;
+    }
+
+    // Вооружает/перевооружает таймер простоя. Актуален только пока комната
+    // "в подвешенном" состоянии до начала матча (LOBBY с занятым слотом или
+    // CUSTOMIZATION) — во время самого матча простой не сбрасываем, чтобы не
+    // обрывать игру из-за паузы на подумать.
+    armIdleTimer() {
+        if (this.idleTimer) {
+            clearTimeout(this.idleTimer);
+            this.idleTimer = null;
+        }
+        const shouldArm =
+            this.state === GAME_STATES.CUSTOMIZATION ||
+            (this.state === GAME_STATES.LOBBY &&
+                (this.players.player_1?.isConnected || this.players.player_2?.isConnected));
+
+        if (shouldArm) {
+            this.idleTimer = setTimeout(() => this.handleForceReset(), IDLE_TIMEOUT_MS);
+        }
     }
 
     // 1. Выбор роли в лобби
@@ -62,6 +100,7 @@ export class GameRoom {
             this.state = GAME_STATES.CUSTOMIZATION;
         }
 
+        this.armIdleTimer();
         this.broadcastState();
     }
 
@@ -85,6 +124,7 @@ export class GameRoom {
             this.roundChoices = { player_1: null, player_2: null };
         }
 
+        this.armIdleTimer();
         this.broadcastState();
     }
 
@@ -104,6 +144,11 @@ export class GameRoom {
             strikerRole: this.strikerRole,
             keeperRole: this.keeperRole
         });
+        // ВАЖНО: без этого choicesStatus в state:sync не обновлялся, пока не
+        // выбрали ОБА — клиент не мог понять "мой выбор принят", кнопка
+        // оставалась активной, а повторный тап тем же игроком молча
+        // отклонялся защитой от спама выше без всякой обратной связи.
+        this.broadcastState();
 
         if (this.roundChoices.player_1 !== null && this.roundChoices.player_2 !== null) {
             this.resolveRound();
@@ -176,11 +221,37 @@ export class GameRoom {
             scores: { player_1: s1, player_2: s2 }
         });
 
+        // Окно голосования "Играть снова": если за RESTART_VOTE_TIMEOUT_MS
+        // не подтвердят ОБА — считаем, что стенд свободен, и сбрасываем в LOBBY.
+        this.restartVotes = { player_1: false, player_2: false };
+        this.restartDeadline = Date.now() + RESTART_VOTE_TIMEOUT_MS;
+        this.restartTimer = setTimeout(() => this.handleForceReset(), RESTART_VOTE_TIMEOUT_MS);
+
         this.broadcastState();
     }
 
+    // ГОЛОС ЗА РЕСТАРТ (кнопка "Zagraj Ponownie" на GAME_OVER).
+    // Рестарт происходит только когда проголосовали ОБА — иначе ждём до
+    // дедлайна, после которого finishGame()'овский таймер уведёт в LOBBY.
+    handleRestartGame(socket) {
+        if (this.state !== GAME_STATES.GAME_OVER) return;
+        const role = socket.role;
+        if (!role || !this.players[role] || this.restartVotes[role]) return;
+
+        this.restartVotes[role] = true;
+        this.broadcastState();
+
+        if (this.restartVotes.player_1 && this.restartVotes.player_2) {
+            if (this.restartTimer) {
+                clearTimeout(this.restartTimer);
+                this.restartTimer = null;
+            }
+            this._doRestart();
+        }
+    }
+
     // МЯГКИЙ РЕСТАРТ ПОСЛЕ ИГРЫ: Сохраняем игроков, сбрасываем счет и идем в CUSTOMIZATION
-    handleRestartGame() {
+    _doRestart() {
         if (this.players.player_1) {
             this.players.player_1.score = 0;
             this.players.player_1.ready = false;
@@ -196,10 +267,13 @@ export class GameRoom {
         this.strikerRole = 'player_1';
         this.keeperRole = 'player_2';
         this.roundChoices = { player_1: null, player_2: null };
+        this.restartVotes = { player_1: false, player_2: false };
+        this.restartDeadline = null;
 
         // Сразу на экран создания персонажа!
         this.state = GAME_STATES.CUSTOMIZATION;
 
+        this.armIdleTimer();
         this.broadcastState();
     }
 
@@ -244,6 +318,15 @@ export class GameRoom {
             scores: {
                 player_1: this.players.player_1?.score || 0,
                 player_2: this.players.player_2?.score || 0
+            },
+            characters: {
+                player_1: this.players.player_1?.character ?? null,
+                player_2: this.players.player_2?.character ?? null
+            },
+            restart: {
+                player_1_ready: this.restartVotes.player_1,
+                player_2_ready: this.restartVotes.player_2,
+                deadline: this.restartDeadline
             }
         });
     }

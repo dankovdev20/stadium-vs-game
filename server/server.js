@@ -36,9 +36,9 @@ io.on('connection', (socket) => {
         room.handleMakeChoice(socket, Number(zoneId));
     });
 
-    // 4. Мягкий рестарт после матча (в CUSTOMIZATION)
+    // 4. Мягкий рестарт после матча (в CUSTOMIZATION) — теперь голосование обоих игроков, см. server/TASKS_FOR_BACKEND.md
     socket.on('game:restart', () => {
-        room.handleRestartGame();
+        room.handleRestartGame(socket);
     });
 
     // 5. Полный сброс (в LOBBY)
