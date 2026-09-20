@@ -3,6 +3,7 @@
 
 @import "@fontsource/baloo-2";
 @import "@fontsource/anton";
+@import "@fontsource/press-start-2p";
 @import "@fontsource/poppins/600.css";
 @import "@fontsource/poppins/700.css";
 
@@ -62,29 +63,65 @@ body {
   background: #000;
 }
 
-/* Тема "стадион": полосы кошения травы вместо плоской заливки. */
+/* Тема "стадион": крупная аркадная сетка и scanlines вместо плоской заливки. */
 .pitch-bg {
+  position: relative;
+  isolation: isolate;
   background-color: var(--color-grass-500);
   background-image:
-    radial-gradient(120% 90% at 50% 0%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.28) 100%),
-    repeating-linear-gradient(
-      115deg,
-      var(--color-grass-500) 0px,
-      var(--color-grass-500) 64px,
-      var(--color-grass-300) 64px,
-      var(--color-grass-300) 128px
-    );
+    linear-gradient(rgba(226, 241, 230, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(226, 241, 230, 0.2) 1px, transparent 1px),
+    repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0, 0, 0, 0.1) 4px),
+    radial-gradient(120% 90% at 50% 0%, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.3) 100%);
+  background-size: 72px 72px, 72px 72px, auto, auto;
+}
+
+.pitch-bg::before,
+.pitch-bg-dark::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  content: "";
+  background-image:
+    url("./assets/pixel-ball.png"),
+    url("./assets/pixel-ball.png"),
+    url("./assets/pixel-ball.png"),
+    url("./assets/pixel-ball.png"),
+    url("./assets/pixel-ball.png"),
+    url("./assets/pixel-ball.png"),
+    url("./assets/pixel-ball.png"),
+    url("./assets/pixel-ball.png"),
+    url("./assets/pixel-ball.png"),
+    url("./assets/pixel-ball.png"),
+    url("./assets/pixel-ball.png"),
+    url("./assets/pixel-ball.png");
+  background-repeat: no-repeat;
+  background-size: 128px 128px;
+  background-position:
+    7% 14%,
+    27% 8%,
+    49% 20%,
+    78% 11%,
+    94% 31%,
+    15% 43%,
+    38% 58%,
+    66% 45%,
+    87% 67%,
+    5% 82%,
+    29% 88%,
+    72% 86%;
+  opacity: 0.22;
 }
 
 .pitch-bg-dark {
+  position: relative;
+  isolation: isolate;
   background-color: var(--color-grass-700);
   background-image:
-    radial-gradient(120% 90% at 50% 0%, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.35) 100%),
-    repeating-linear-gradient(
-      115deg,
-      var(--color-grass-700) 0px,
-      var(--color-grass-700) 64px,
-      #16362a 64px,
-      #16362a 128px
-    );
+    linear-gradient(rgba(213, 234, 220, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(213, 234, 220, 0.14) 1px, transparent 1px),
+    repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0, 0, 0, 0.14) 4px),
+    radial-gradient(120% 90% at 50% 0%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.38) 100%);
+  background-size: 72px 72px, 72px 72px, auto, auto;
 }
