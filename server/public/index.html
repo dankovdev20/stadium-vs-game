@@ -1,321 +1,1078 @@
 <!DOCTYPE html>
 <html lang="pl">
-
 <head>
     <meta charset="UTF-8">
-    <title>Stadium VS - Test Klienta</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STADIUM VS // DEV CONTROL BENCH (MONOCHROME)</title>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            border-radius: 0 !important;
+            outline: none;
+        }
+
+        :root {
+            --bg-canvas: #000000;
+            --bg-panel: #0a0a0a;
+            --bg-panel-alt: #121212;
+            --border-subtle: #222222;
+            --border-strong: #444444;
+            --border-focus: #ffffff;
+            --text-main: #ffffff;
+            --text-secondary: #cccccc;
+            --text-muted: #777777;
+            --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+        }
+
         body {
-            font-family: sans-serif;
-            padding: 20px;
-            background: #1a1a1a;
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            padding: 16px;
+            font-size: 12px;
+            line-height: 1.4;
+            letter-spacing: -0.01em;
+        }
+
+        /* Top Header Bar */
+        .hud-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-strong);
+            padding: 10px 14px;
+            margin-bottom: 12px;
+        }
+
+        .hud-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hud-title {
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
             color: #fff;
         }
 
-        .card {
-            background: #2a2a2a;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 8px;
+        .hud-version {
+            font-size: 10px;
+            padding: 2px 6px;
+            background: #000;
+            color: #fff;
+            border: 1px solid var(--border-strong);
+            font-weight: 700;
         }
 
-        button {
-            padding: 12px 20px;
-            margin: 5px;
-            font-size: 15px;
+        .hud-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Connection Tag */
+        .conn-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            padding: 4px 8px;
+            font-weight: 800;
+            border: 1px solid var(--border-strong);
+            background: #000;
+        }
+        .conn-dot {
+            width: 6px;
+            height: 6px;
+            background: #444;
+        }
+        .conn-online .conn-dot { background: #fff; }
+        .conn-online { color: #fff; border-color: #fff; }
+        .conn-offline .conn-dot { background: #222; }
+        .conn-offline { color: #777; border-color: #444; }
+
+        /* Strict Buttons */
+        button, .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 12px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             cursor: pointer;
-            border-radius: 4px;
-            border: none;
-            font-weight: bold;
+            border: 1px solid var(--border-strong);
+            background: #0a0a0a;
+            color: #fff;
+            transition: none;
+            user-select: none;
+        }
+
+        button:hover:not(:disabled) {
+            background: #ffffff !important;
+            color: #000000 !important;
+            border-color: #ffffff !important;
+        }
+
+        button:active:not(:disabled) {
+            background: #cccccc !important;
+            color: #000000 !important;
         }
 
         button:disabled {
             opacity: 0.3;
             cursor: not-allowed;
+            border-color: #222;
+            color: #555;
+            background: #050505;
         }
 
-        .btn-zone {
-            background: #007bff;
-            color: white;
+        .btn-inverse {
+            background: #ffffff;
+            color: #000000;
+            border-color: #ffffff;
+        }
+        .btn-inverse:hover:not(:disabled) {
+            background: #000000 !important;
+            color: #ffffff !important;
+            border-color: #ffffff !important;
         }
 
-        .btn-action {
-            background: #28a745;
-            color: white;
+        /* Layout Grid */
+        .grid-bench {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 12px;
         }
 
-        .btn-role {
-            background: #6f42c1;
-            color: white;
-            font-size: 16px;
+        @media (max-width: 900px) {
+            .grid-bench {
+                grid-template-columns: 1fr;
+            }
         }
 
-        .btn-reset {
-            background: #dc3545;
-            color: white;
-            float: right;
-            padding: 6px 12px;
-            font-size: 12px;
+        /* Panels */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            padding: 12px;
+            margin-bottom: 12px;
         }
 
-        .badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-weight: bold;
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
-        .badge-role {
-            background: #17a2b8;
+        .telemetry-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px dotted #1a1a1a;
         }
 
-        .log-box {
+        .telemetry-label {
+            color: var(--text-muted);
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .telemetry-value {
+            font-weight: 800;
+            color: #fff;
+        }
+
+        /* Strict B&W Scoreboard */
+        .scoreboard {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 6px;
             background: #000;
-            color: #00ff66;
+            border: 1px solid var(--border-strong);
             padding: 10px;
-            font-family: monospace;
-            height: 140px;
-            overflow-y: scroll;
-            border-radius: 4px;
-        }
-
-        .status-msg {
-            font-size: 16px;
-            font-weight: bold;
-            color: #ffc107;
-            margin-top: 10px;
-        }
-
-        .game-over-box {
-            background: #343a40;
-            border: 2px solid #28a745;
             text-align: center;
-            padding: 20px;
-            border-radius: 8px;
+            margin: 10px 0;
         }
+
+        .score-box {
+            color: #fff;
+        }
+
+        .score-num {
+            font-size: 30px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .score-divider {
+            font-size: 22px;
+            color: var(--text-muted);
+            align-self: center;
+        }
+
+        .score-sub {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-top: 4px;
+        }
+
+        /* Session Box */
+        .session-box {
+            background: #000;
+            border: 1px solid var(--border-strong);
+            padding: 8px;
+            margin-top: 8px;
+        }
+
+        .token-display {
+            font-size: 9px;
+            word-break: break-all;
+            background: #0e0e0e;
+            padding: 6px;
+            border: 1px solid var(--border-subtle);
+            color: #fff;
+            margin: 6px 0;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            border: 1px solid var(--border-strong);
+            background: #000;
+            color: #fff;
+        }
+
+        .badge-solid {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+        }
+
+        .badge-muted {
+            color: #777;
+            border-color: #333;
+        }
+
+        /* Role Picker */
+        .role-picker {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .role-card {
+            border: 1px solid var(--border-strong);
+            background: #080808;
+            padding: 12px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 120px;
+        }
+
+        /* Customization Inputs */
+        .custom-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .custom-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .custom-input-group label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .custom-input-group input {
+            background: #000;
+            border: 1px solid var(--border-strong);
+            color: #fff;
+            padding: 6px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            text-align: center;
+        }
+        .custom-input-group input:focus {
+            border-color: #fff;
+        }
+
+        /* Goal Zone Matrix */
+        .goal-matrix {
+            border: 1px solid var(--border-strong);
+            background: #000;
+            padding: 10px;
+            margin: 12px 0;
+            position: relative;
+        }
+
+        .goal-matrix-label {
+            position: absolute;
+            top: -8px;
+            left: 10px;
+            background: #000;
+            padding: 0 4px;
+            font-size: 8px;
+            font-weight: 800;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .goal-row-top {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .goal-row-bottom {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+        }
+
+        .btn-target {
+            padding: 20px 8px;
+            font-size: 11px;
+            font-weight: 800;
+            text-align: center;
+            border: 1px solid var(--border-strong);
+            background: #0a0a0a;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-target:hover:not(:disabled) {
+            background: #ffffff !important;
+            color: #000000 !important;
+            border-color: #ffffff !important;
+        }
+
+        .btn-target.btn-selected {
+            background: #ffffff !important;
+            color: #000000 !important;
+            border-color: #ffffff !important;
+            font-weight: 900;
+        }
+
+        .btn-target span.pts {
+            font-size: 9px;
+            font-weight: 700;
+            opacity: 0.7;
+        }
+
+        .goal-center-void {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: #444;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            border: 1px dashed #222;
+            background: #050505;
+        }
+
+        /* Banner Box */
+        .banner-alert {
+            padding: 10px 12px;
+            border: 1px solid var(--border-strong);
+            background: #070707;
+            margin: 10px 0;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Terminal Console */
+        .terminal-box {
+            background: #000000;
+            border: 1px solid var(--border-strong);
+            height: 220px;
+            overflow-y: scroll;
+            padding: 8px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid #111;
+            padding: 2px 0;
+        }
+
+        .log-time { color: var(--text-muted); flex-shrink: 0; }
+        .log-tag { font-weight: 800; flex-shrink: 0; color: #fff; }
+        .log-msg { color: #ccc; word-break: break-word; }
+
+        .tag-SYS { color: #888; }
+        .tag-SYNC { color: #fff; }
+        .tag-CHOICE { color: #fff; font-weight: 900; }
+        .tag-RESOLVE { background: #fff; color: #000; padding: 0 3px; }
+        .tag-RECON { color: #fff; text-decoration: underline; }
+        .tag-DC { color: #888; }
+        .tag-ERR { background: #fff; color: #000; padding: 0 3px; font-weight: 900; }
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
-
 <body>
 
-    <button class="btn-reset" onclick="hardReset()">Pełny Reset Pokoju</button>
-    <h1>Stadium 1v1 - Panel Testowy</h1>
-
-    <div class="card">
-        <h3>Twoja rola: <span id="myRole" class="badge badge-role">Nie wybrano</span></h3>
-        <p>Stan gry: <b id="gameState">-</b> | Runda: <b id="gameRound">-</b>/10 | Wynik: P1: <b id="scoreP1">0</b> -
-            P2: <b id="scoreP2">0</b></p>
-    </div>
-
-    <!-- Sekcja 0: Wybór Roli (LOBBY) -->
-    <div id="sectionLobby" class="card" style="display: none;">
-        <h3>Wybierz swoje stanowisko:</h3>
-        <button id="btnRoleP1" class="btn-role" onclick="selectRole('player_1')">Wybierz: Gracz 1</button>
-        <button id="btnRoleP2" class="btn-role" onclick="selectRole('player_2')">Wybierz: Gracz 2</button>
-        <p id="lobbyStatus" class="status-msg">Oczekiwanie na wybór stanowiska...</p>
-    </div>
-
-    <!-- Sekcja 1: Tworzenie Postaci -->
-    <div id="sectionCustomization" class="card" style="display: none;">
-        <h3>Krok 1: Wybór Postaci</h3>
-        <p>Wybierz robota i kliknij Zatwierdź:</p>
-        <button id="btnCharA" class="btn-action" onclick="submitCharacter(1, 1, 1)">Zatwierdź Robota Czerwonego</button>
-        <button id="btnCharB" class="btn-action" onclick="submitCharacter(2, 3, 2)">Zatwierdź Robota
-            Niebieskiego</button>
-        <p id="customStatus" class="status-msg"></p>
-    </div>
-
-    <!-- Sekcja 2: Rzuty Karne -->
-    <div id="sectionGame" class="card" style="display: none;">
-        <h2 id="roleBanner">Tura: -</h2>
-        <p>Wybierz strefę (1-5):</p>
-        <div id="zoneButtons">
-            <div>
-                <button class="btn-zone" onclick="chooseZone(1)">1: Góra-Lewo (2 pkt)</button>
-                <button class="btn-zone" onclick="chooseZone(2)">2: Góra-Środek (2 pkt)</button>
-                <button class="btn-zone" onclick="chooseZone(3)">3: Góra-Prawo (2 pkt)</button>
-            </div>
-            <div style="margin-top: 5px;">
-                <button class="btn-zone" onclick="chooseZone(4)">4: Dół-Lewo (1 pkt)</button>
-                <button class="btn-zone" onclick="chooseZone(5)">5: Dół-Prawo (1 pkt)</button>
-            </div>
+    <!-- HUD Header -->
+    <header class="hud-header">
+        <div class="hud-brand">
+            <div class="hud-title">STADIUM 1v1 // DEV CONTROL BENCH</div>
+            <div class="hud-version">MONOCHROME B&amp;W</div>
         </div>
-        <div id="choiceStatus" class="status-msg"></div>
-    </div>
+        <div class="hud-controls">
+            <div id="connStatusTag" class="conn-tag conn-offline">
+                <div class="conn-dot"></div>
+                <span id="connStatusText">OFFLINE</span>
+            </div>
+            <button onclick="forceResetRoom()">[FORCE HARD RESET]</button>
+        </div>
+    </header>
 
-    <!-- Sekcja 3: Koniec Gry (GAME OVER) -->
-    <div id="sectionGameOver" class="card game-over-box" style="display: none;">
-        <h1 id="winnerText" style="color: #28a745; margin: 0 0 10px 0;">Koniec Meczu!</h1>
-        <h3 id="finalScoreText" style="margin-bottom: 20px;">Wynik końcowy: -</h3>
-        <button class="btn-action" style="font-size: 18px; padding: 15px 30px;" onclick="restartGame()">Zagraj Ponownie
-            (Nowa Gra)</button>
-    </div>
+    <!-- Main Workspace Grid -->
+    <div class="grid-bench">
 
-    <div class="card">
-        <h4>Dziennik Zdarzeń:</h4>
-        <div id="logs" class="log-box"></div>
+        <!-- Left Column: Telemetry & Session -->
+        <aside>
+            <div class="panel">
+                <div class="panel-header">
+                    <span>TELEMETRIA POKOJU</span>
+                    <span id="stateBadge" class="badge">LOBBY</span>
+                </div>
+
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Runda</span>
+                    <span class="telemetry-value"><span id="telRound">0</span> / 10</span>
+                </div>
+
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Napastnik (Strzał)</span>
+                    <span id="telStriker" class="telemetry-value">-</span>
+                </div>
+
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Bramkarz (Obrona)</span>
+                    <span id="telKeeper" class="telemetry-value">-</span>
+                </div>
+
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Slot Gracz 1</span>
+                    <span id="telSlotP1" class="badge badge-muted">WOLNY</span>
+                </div>
+
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Slot Gracz 2</span>
+                    <span id="telSlotP2" class="badge badge-muted">WOLNY</span>
+                </div>
+
+                <!-- Scoreboard -->
+                <div class="scoreboard">
+                    <div class="score-box">
+                        <div id="scoreP1" class="score-num">0</div>
+                        <div class="score-sub">GRACZ 1 (P1)</div>
+                    </div>
+                    <div class="score-divider">:</div>
+                    <div class="score-box">
+                        <div id="scoreP2" class="score-num">0</div>
+                        <div class="score-sub">GRACZ 2 (P2)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Box -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span>SESJA &amp; RECONNECT</span>
+                    <span id="myRoleBadge" class="badge badge-muted">OBSERWATOR</span>
+                </div>
+
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Twoja Rola</span>
+                    <span id="myRoleText" class="telemetry-value">Brak</span>
+                </div>
+
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Socket ID</span>
+                    <span id="mySockId" class="telemetry-value" style="font-size: 10px;">-</span>
+                </div>
+
+                <div class="session-box">
+                    <div style="font-size: 9px; color: var(--text-muted); text-transform: uppercase; font-weight: 800;">
+                        Session Token (ID Sesji):
+                    </div>
+                    <div id="sessionTokenDisplay" class="token-display">Brak aktywnej sesji</div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px;">
+                        <button onclick="simulateDisconnect()">[SYMULUJ DC]</button>
+                        <button onclick="manualReconnect()">[RECONNECT]</button>
+                    </div>
+
+                    <div style="margin-top: 6px;">
+                        <button style="width: 100%; font-size: 9px; padding: 4px;" onclick="clearLocalSession()">[WYCZYŚĆ SESJĘ]</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Column: Interactive Stage Views -->
+        <main>
+            <!-- 1. Lobby Stage -->
+            <div id="viewLobby" class="panel" style="display: none;">
+                <div class="panel-header">
+                    <span>ETAP 0 // WYBÓR STANOWISKA (LOBBY)</span>
+                    <span class="badge">[STANOWISKA]</span>
+                </div>
+
+                <div class="role-picker">
+                    <div class="role-card">
+                        <div>
+                            <div style="font-size: 14px; font-weight: 900; margin-bottom: 4px;">GRACZ 1 (P1)</div>
+                            <div id="cardStatusP1" class="badge badge-solid" style="margin-bottom: 8px;">DOSTĘPNY</div>
+                            <div style="font-size: 10px; color: var(--text-muted);">Zaczyna jako Napastnik w rundzie 1.</div>
+                        </div>
+                        <button id="btnPickP1" style="width: 100%; margin-top: 10px;" onclick="selectRole('player_1')">[WYBIERZ GRACZ 1]</button>
+                    </div>
+
+                    <div class="role-card">
+                        <div>
+                            <div style="font-size: 14px; font-weight: 900; margin-bottom: 4px;">GRACZ 2 (P2)</div>
+                            <div id="cardStatusP2" class="badge badge-solid" style="margin-bottom: 8px;">DOSTĘPNY</div>
+                            <div style="font-size: 10px; color: var(--text-muted);">Zaczyna jako Bramkarz w rundzie 1.</div>
+                        </div>
+                        <button id="btnPickP2" style="width: 100%; margin-top: 10px;" onclick="selectRole('player_2')">[WYBIERZ GRACZ 2]</button>
+                    </div>
+                </div>
+
+                <div id="lobbyStatusMsg" class="banner-alert" style="color: var(--text-muted); font-size: 11px;">
+                    Oczekiwanie na wybór ról przez graczy...
+                </div>
+            </div>
+
+            <!-- 2. Customization Stage -->
+            <div id="viewCustomization" class="panel" style="display: none;">
+                <div class="panel-header">
+                    <span>ETAP 1 // KONSTRUKTOR POSTACI (CUSTOMIZATION)</span>
+                    <span class="badge">[KONFIGURACJA]</span>
+                </div>
+
+                <div class="custom-grid">
+                    <div class="custom-input-group">
+                        <label>Głowa (Head ID)</label>
+                        <input id="inputHead" type="number" value="1" min="1" max="10">
+                    </div>
+                    <div class="custom-input-group">
+                        <label>Korpus (Body ID)</label>
+                        <input id="inputBody" type="number" value="1" min="1" max="10">
+                    </div>
+                    <div class="custom-input-group">
+                        <label>Nogi (Legs ID)</label>
+                        <input id="inputLegs" type="number" value="1" min="1" max="10">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                    <button onclick="setPreset(1,1,1)">[PRESET 1,1,1]</button>
+                    <button onclick="setPreset(2,3,2)">[PRESET 2,3,2]</button>
+                    <button onclick="setPreset(3,2,1)">[PRESET 3,2,1]</button>
+                </div>
+
+                <button id="btnSubmitChar" class="btn-inverse" style="width: 100%; padding: 10px;" onclick="submitCustomCharacter()">
+                    [ZATWIERDŹ POSTAĆ // CONFIRM CHARACTER]
+                </button>
+
+                <div id="customStatusMsg" class="banner-alert" style="margin-top: 8px; font-size: 11px;">
+                    Wybierz parametry robota i potwierdź.
+                </div>
+            </div>
+
+            <!-- 3. Playing Stage (Penalty Shootout) -->
+            <div id="viewPlaying" class="panel" style="display: none;">
+                <div class="panel-header">
+                    <span>ETAP 2 // SERIA RZUTÓW KARNYCH (PLAYING)</span>
+                    <span id="roundResultBadge" class="badge badge-solid">FAZA STRZAŁU</span>
+                </div>
+
+                <div id="roleActionBanner" class="banner-alert">
+                    <span id="roleBannerText">TURA: ROZPOZNAWANIE...</span>
+                    <span id="turnRoleTag" class="badge badge-solid">-</span>
+                </div>
+
+                <!-- 5-Zone Target Goal Matrix -->
+                <div class="goal-matrix">
+                    <div class="goal-matrix-label">BRAMKA // STREFY CELU (1-5)</div>
+
+                    <div class="goal-row-top">
+                        <button id="btnZone1" class="btn-target" onclick="sendZoneChoice(1)">
+                            <span>[01] GÓRA-LEWO</span>
+                            <span class="pts">+2 PKT</span>
+                        </button>
+                        <button id="btnZone2" class="btn-target" onclick="sendZoneChoice(2)">
+                            <span>[02] GÓRA-ŚRODEK</span>
+                            <span class="pts">+2 PKT</span>
+                        </button>
+                        <button id="btnZone3" class="btn-target" onclick="sendZoneChoice(3)">
+                            <span>[03] GÓRA-PRAWO</span>
+                            <span class="pts">+2 PKT</span>
+                        </button>
+                    </div>
+
+                    <div class="goal-row-bottom">
+                        <button id="btnZone4" class="btn-target" onclick="sendZoneChoice(4)">
+                            <span>[04] DÓŁ-LEWO</span>
+                            <span class="pts">+1 PKT</span>
+                        </button>
+                        <div class="goal-center-void">
+                            [STREFA NEUTRALNA]
+                        </div>
+                        <button id="btnZone5" class="btn-target" onclick="sendZoneChoice(5)">
+                            <span>[05] DÓŁ-PRAWO</span>
+                            <span class="pts">+1 PKT</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="telemetry-row" style="background: #050505; padding: 8px; border: 1px solid var(--border-strong);">
+                    <div>
+                        <span class="telemetry-label">Status Twojej decyzji:</span>
+                        <span id="myChoiceStatus" class="badge badge-muted" style="margin-left: 6px;">OCZEKIWANIE</span>
+                    </div>
+                    <div>
+                        <span class="telemetry-label">Status decyzji rywala:</span>
+                        <span id="rivalChoiceStatus" class="badge badge-muted" style="margin-left: 6px;">MYŚLI...</span>
+                    </div>
+                </div>
+
+                <div id="roundOutcomeBox" class="banner-alert" style="display: none; margin-top: 8px;">
+                    <span id="roundOutcomeText">-</span>
+                </div>
+            </div>
+
+            <!-- 4. Game Over Stage -->
+            <div id="viewGameOver" class="panel" style="display: none;">
+                <div class="panel-header">
+                    <span>ETAP 3 // KONIEC MECZU (GAME OVER)</span>
+                    <span class="badge badge-solid">[ZAKOŃCZONY]</span>
+                </div>
+
+                <div style="text-align: center; padding: 16px; background: #000; border: 1px solid var(--border-strong); margin-bottom: 10px;">
+                    <div id="finalWinnerText" style="font-size: 20px; font-weight: 900; letter-spacing: 0.08em; margin-bottom: 6px;">
+                        WYGRAŁ GRACZ 1!
+                    </div>
+                    <div id="finalScoreDetails" style="font-size: 12px; color: var(--text-muted);">
+                        Wynik końcowy: Gracz 1 (0 pkt) — Gracz 2 (0 pkt)
+                    </div>
+                </div>
+
+                <div class="panel" style="background: #000; border-color: var(--border-strong);">
+                    <div class="panel-header">
+                        <span>GŁOSOWANIE: ZAGRAJ PONOWNIE (10 SEKUND)</span>
+                        <span id="restartTimerBadge" class="badge">T-10s</span>
+                    </div>
+
+                    <div class="telemetry-row">
+                        <span class="telemetry-label">Gracz 1:</span>
+                        <span id="voteStatusP1" class="badge badge-muted">CZEKA</span>
+                    </div>
+
+                    <div class="telemetry-row">
+                        <span class="telemetry-label">Gracz 2:</span>
+                        <span id="voteStatusP2" class="badge badge-muted">CZEKA</span>
+                    </div>
+
+                    <button id="btnVoteRestart" class="btn-inverse" style="width: 100%; padding: 12px; font-size: 12px; margin-top: 10px;" onclick="voteRestart()">
+                        [ZAGRAJ PONOWNIE // VOTE RESTART]
+                    </button>
+                </div>
+            </div>
+
+            <!-- Terminal Events Log -->
+            <div class="panel" style="margin-bottom: 0;">
+                <div class="panel-header">
+                    <span>DZIENNIK ZDARZEŃ SOCKET.IO (LIVE LOG)</span>
+                    <button style="padding: 2px 6px; font-size: 9px;" onclick="clearLogs()">[WYCZYŚĆ]</button>
+                </div>
+                <div id="terminalLog" class="terminal-box"></div>
+            </div>
+        </main>
     </div>
 
     <script>
         const socket = io();
         let myRole = null;
-        let hasChosenThisRound = false;
+        let mySessionToken = localStorage.getItem('stadium_session_token') || null;
+        let savedRole = localStorage.getItem('stadium_session_role') || null;
+        let hasChosenZone = false;
 
-        function log(msg) {
-            const el = document.getElementById('logs');
-            el.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
-            el.scrollTop = el.scrollHeight;
+        function log(tag, msg) {
+            const terminal = document.getElementById('terminalLog');
+            const now = new Date().toTimeString().split(' ')[0];
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.innerHTML = `
+                <span class="log-time">[${now}]</span>
+                <span class="log-tag tag-${tag}">[${tag}]</span>
+                <span class="log-msg">${msg}</span>
+            `;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
         }
 
-        function setButtonsDisabled(disabled) {
-            const btns = document.querySelectorAll('#zoneButtons button');
-            btns.forEach(b => b.disabled = disabled);
+        function clearLogs() {
+            document.getElementById('terminalLog').innerHTML = '';
         }
+
+        function persistSession(role, token) {
+            myRole = role;
+            mySessionToken = token;
+            if (token) localStorage.setItem('stadium_session_token', token);
+            if (role) localStorage.setItem('stadium_session_role', role);
+            updateSessionUI();
+        }
+
+        function clearLocalSession() {
+            localStorage.removeItem('stadium_session_token');
+            localStorage.removeItem('stadium_session_role');
+            myRole = null;
+            mySessionToken = null;
+            savedRole = null;
+            updateSessionUI();
+            log('SYS', 'Lokalna sesja została wyczyszczona.');
+        }
+
+        function updateSessionUI() {
+            const roleEl = document.getElementById('myRoleText');
+            const roleBadge = document.getElementById('myRoleBadge');
+            const tokenEl = document.getElementById('sessionTokenDisplay');
+
+            if (myRole) {
+                roleEl.innerText = myRole === 'player_1' ? 'GRACZ 1 (P1)' : 'GRACZ 2 (P2)';
+                roleBadge.className = 'badge badge-solid';
+                roleBadge.innerText = myRole.toUpperCase();
+            } else {
+                roleEl.innerText = 'Brak (Obserwator)';
+                roleBadge.className = 'badge badge-muted';
+                roleBadge.innerText = 'OBSERWATOR';
+            }
+
+            if (mySessionToken) {
+                tokenEl.innerText = mySessionToken;
+            } else {
+                tokenEl.innerText = 'Brak aktywnej sesji';
+            }
+        }
+
+        socket.on('connect', () => {
+            document.getElementById('connStatusTag').className = 'conn-tag conn-online';
+            document.getElementById('connStatusText').innerText = 'ONLINE';
+            document.getElementById('mySockId').innerText = socket.id;
+            log('SYS', `Połączono z serwerem. Socket ID: ${socket.id}`);
+
+            if (mySessionToken) {
+                log('RECON', `Wykryto token (${mySessionToken.slice(0, 8)}...). Próba odzyskania roli...`);
+                socket.emit('player:reconnect', { sessionToken: mySessionToken, role: savedRole });
+            }
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('connStatusTag').className = 'conn-tag conn-offline';
+            document.getElementById('connStatusText').innerText = 'OFFLINE';
+            log('DC', 'Rozłączono z serwerem.');
+        });
 
         socket.on('role:assigned', (data) => {
-            myRole = data.role;
-            document.getElementById('myRole').innerText = data.role;
-            log(`Pomyślnie wybrano: <b>${data.role}</b>`);
+            persistSession(data.role, data.sessionToken);
+            if (data.reconnected) {
+                log('RECON', `Pomyślnie przywrócono sesję! Rola: ${data.role}`);
+            } else {
+                log('ROLE', `Przydzielono rolę: ${data.role} | Token: ${data.sessionToken?.slice(0, 8)}...`);
+            }
+        });
+
+        socket.on('room:player_disconnected', (data) => {
+            log('DC', `Gracz ${data.role} rozłączył się. Czas na powrót: ${data.timeoutSec}s.`);
+        });
+
+        socket.on('room:player_reconnected', (data) => {
+            log('RECON', `Gracz ${data.role} powrócił do gry!`);
         });
 
         socket.on('room:error', (err) => {
-            log(`Błąd: ${err.message}`);
+            log('ERR', `Kod: ${err.code} — ${err.message}`);
+            if (err.code === 'RECONNECT_FAILED') {
+                clearLocalSession();
+            }
+        });
+
+        socket.on('room:hard_reset', () => {
+            clearLocalSession();
+            log('SYS', 'Otrzymano sygnał twardego resetu pokoju.');
         });
 
         socket.on('state:sync', (state) => {
-            document.getElementById('gameState').innerText = state.state;
-            document.getElementById('gameRound').innerText = state.currentRound;
+            document.getElementById('telRound').innerText = state.currentRound;
+            document.getElementById('telStriker').innerText = state.strikerRole ? state.strikerRole.toUpperCase() : '-';
+            document.getElementById('telKeeper').innerText = state.keeperRole ? state.keeperRole.toUpperCase() : '-';
             document.getElementById('scoreP1').innerText = state.scores.player_1;
             document.getElementById('scoreP2').innerText = state.scores.player_2;
 
-            // 1. Ekran Lobby
+            const stateBadge = document.getElementById('stateBadge');
+            stateBadge.innerText = state.state;
+            stateBadge.className = `badge ${state.state === 'PLAYING' ? 'badge-solid' : 'badge'}`;
+
+            const slotP1 = document.getElementById('telSlotP1');
+            const slotP2 = document.getElementById('telSlotP2');
+            slotP1.innerText = state.slots.player_1_taken ? 'ZAJĘTY' : 'WOLNY';
+            slotP1.className = `badge ${state.slots.player_1_taken ? 'badge-solid' : 'badge-muted'}`;
+            slotP2.innerText = state.slots.player_2_taken ? 'ZAJĘTY' : 'WOLNY';
+            slotP2.className = `badge ${state.slots.player_2_taken ? 'badge-solid' : 'badge-muted'}`;
+
+            document.getElementById('viewLobby').style.display = (state.state === 'LOBBY') ? 'block' : 'none';
+            document.getElementById('viewCustomization').style.display = (state.state === 'CUSTOMIZATION') ? 'block' : 'none';
+            document.getElementById('viewPlaying').style.display = (state.state === 'PLAYING' || state.state === 'ROUND_RESULT') ? 'block' : 'none';
+            document.getElementById('viewGameOver').style.display = (state.state === 'GAME_OVER') ? 'block' : 'none';
+
             if (state.state === 'LOBBY') {
-                document.getElementById('sectionLobby').style.display = 'block';
-                document.getElementById('sectionCustomization').style.display = 'none';
-                document.getElementById('sectionGame').style.display = 'none';
-                document.getElementById('sectionGameOver').style.display = 'none';
+                const btnP1 = document.getElementById('btnPickP1');
+                const btnP2 = document.getElementById('btnPickP2');
+                const cardP1 = document.getElementById('cardStatusP1');
+                const cardP2 = document.getElementById('cardStatusP2');
 
-                const btnP1 = document.getElementById('btnRoleP1');
-                const btnP2 = document.getElementById('btnRoleP2');
+                const isP1Taken = state.slots.player_1_taken;
+                const isP2Taken = state.slots.player_2_taken;
 
-                btnP1.style.display = (state.slots.player_1_taken && myRole !== 'player_1') ? 'none' : 'inline-block';
-                btnP2.style.display = (state.slots.player_2_taken && myRole !== 'player_2') ? 'none' : 'inline-block';
+                btnP1.disabled = isP1Taken || (myRole === 'player_1');
+                btnP2.disabled = isP2Taken || (myRole === 'player_2');
 
-                btnP1.disabled = (myRole === 'player_1');
-                btnP2.disabled = (myRole === 'player_2');
+                cardP1.innerText = isP1Taken ? 'ZAJĘTY' : 'DOSTĘPNY';
+                cardP1.className = `badge ${isP1Taken ? 'badge-muted' : 'badge-solid'}`;
+                cardP2.innerText = isP2Taken ? 'ZAJĘTY' : 'DOSTĘPNY';
+                cardP2.className = `badge ${isP2Taken ? 'badge-muted' : 'badge-solid'}`;
 
+                const msg = document.getElementById('lobbyStatusMsg');
                 if (myRole) {
-                    document.getElementById('lobbyStatus').innerText = `Wybrałeś: ${myRole}. Oczekiwanie na drugiego gracza...`;
+                    msg.innerText = `Wybrano: ${myRole.toUpperCase()}. Oczekiwanie na drugiego gracza...`;
+                } else {
+                    msg.innerText = 'Wybierz stanowisko, aby dołączyć do gry.';
                 }
             }
 
-            // 2. Ekran Tworzenia Postaci
             if (state.state === 'CUSTOMIZATION') {
-                document.getElementById('sectionLobby').style.display = 'none';
-                document.getElementById('sectionCustomization').style.display = 'block';
-                document.getElementById('sectionGame').style.display = 'none';
-                document.getElementById('sectionGameOver').style.display = 'none';
-
-                // Rozblokowanie przycisków postaci dla nowej gry
-                document.getElementById('btnCharA').disabled = false;
-                document.getElementById('btnCharB').disabled = false;
-                document.getElementById('customStatus').innerText = 'Wybierz robota.';
+                document.getElementById('btnSubmitChar').disabled = false;
             }
 
-            // 3. Ekran Gry
-            if (state.state === 'PLAYING') {
-                document.getElementById('sectionCustomization').style.display = 'none';
-                document.getElementById('sectionGame').style.display = 'block';
-                document.getElementById('sectionGameOver').style.display = 'none';
-
+            if (state.state === 'PLAYING' || state.state === 'ROUND_RESULT') {
                 const isStriker = (state.strikerRole === myRole);
-                document.getElementById('roleBanner').innerText = isStriker ? 'Twoja rola: NAPASTNIK (Strzelaj!)' : 'Twoja rola: BRAMKARZ (Broń!)';
-                document.getElementById('roleBanner').style.color = isStriker ? '#28a745' : '#17a2b8';
+                const isKeeper = (state.keeperRole === myRole);
 
-                const iHaveChosen = (myRole === 'player_1' && state.choicesStatus.player_1_chosen) ||
-                    (myRole === 'player_2' && state.choicesStatus.player_2_chosen);
+                const bannerText = document.getElementById('roleBannerText');
+                const roleTag = document.getElementById('turnRoleTag');
 
-                hasChosenThisRound = iHaveChosen;
-                setButtonsDisabled(iHaveChosen);
+                if (isStriker) {
+                    bannerText.innerText = 'TWOJA ROLA: NAPASTNIK // WYBIERZ STREFĘ STRZAŁU!';
+                    roleTag.innerText = 'STRZELEC';
+                    roleTag.className = 'badge badge-solid';
+                } else if (isKeeper) {
+                    bannerText.innerText = 'TWOJA ROLA: BRAMKARZ // WYBIERZ STREFĘ OBRONY!';
+                    roleTag.innerText = 'BRAMKARZ';
+                    roleTag.className = 'badge badge-solid';
+                } else {
+                    bannerText.innerText = `TRYB OBSERWATORA // RUNDA ${state.currentRound}`;
+                    roleTag.innerText = 'OBSERWATOR';
+                    roleTag.className = 'badge badge-muted';
+                }
 
-                const opponentRole = myRole === 'player_1' ? 'player_2' : 'player_1';
-                const opponentChosen = (opponentRole === 'player_1' && state.choicesStatus.player_1_chosen) ||
-                    (opponentRole === 'player_2' && state.choicesStatus.player_2_chosen);
+                const myChosen = (myRole === 'player_1' && state.choicesStatus.player_1_chosen) ||
+                                 (myRole === 'player_2' && state.choicesStatus.player_2_chosen);
+                const rivalRole = myRole === 'player_1' ? 'player_2' : 'player_1';
+                const rivalChosen = (rivalRole === 'player_1' && state.choicesStatus.player_1_chosen) ||
+                                    (rivalRole === 'player_2' && state.choicesStatus.player_2_chosen);
 
-                if (!iHaveChosen && opponentChosen) {
-                    document.getElementById('choiceStatus').innerText = 'Rywal podjął decyzję! Twój ruch!';
-                } else if (!iHaveChosen && !opponentChosen) {
-                    document.getElementById('choiceStatus').innerText = 'Wybierz strefę.';
+                hasChosenZone = myChosen;
+                updateTargetButtonsDisabled(myChosen || state.state === 'ROUND_RESULT' || !myRole);
+
+                const myStatusBadge = document.getElementById('myChoiceStatus');
+                myStatusBadge.innerText = myChosen ? 'WYBÓR ZAPISANY' : 'TWÓJ RUCH';
+                myStatusBadge.className = `badge ${myChosen ? 'badge-solid' : 'badge-muted'}`;
+
+                const rivalStatusBadge = document.getElementById('rivalChoiceStatus');
+                rivalStatusBadge.innerText = rivalChosen ? 'GOTOWY' : 'MYŚLI...';
+                rivalStatusBadge.className = `badge ${rivalChosen ? 'badge-solid' : 'badge-muted'}`;
+
+                if (state.state === 'PLAYING') {
+                    document.getElementById('roundOutcomeBox').style.display = 'none';
+                    document.getElementById('roundResultBadge').innerText = 'FAZA STRZAŁU';
                 }
             }
 
-            if (state.state === 'ROUND_RESULT') {
-                setButtonsDisabled(true);
-            }
-
-            // 4. Koniec Gry
             if (state.state === 'GAME_OVER') {
-                document.getElementById('sectionGame').style.display = 'none';
-                document.getElementById('sectionCustomization').style.display = 'none';
-                document.getElementById('sectionGameOver').style.display = 'block';
+                const voteP1 = document.getElementById('voteStatusP1');
+                const voteP2 = document.getElementById('voteStatusP2');
+                voteP1.innerText = state.restart?.player_1_ready ? 'GOTOWY' : 'CZEKA';
+                voteP1.className = `badge ${state.restart?.player_1_ready ? 'badge-solid' : 'badge-muted'}`;
+                voteP2.innerText = state.restart?.player_2_ready ? 'GOTOWY' : 'CZEKA';
+                voteP2.className = `badge ${state.restart?.player_2_ready ? 'badge-solid' : 'badge-muted'}`;
+
+                const hasVoted = (myRole === 'player_1' && state.restart?.player_1_ready) ||
+                                 (myRole === 'player_2' && state.restart?.player_2_ready);
+                document.getElementById('btnVoteRestart').disabled = hasVoted || !myRole;
+
+                if (state.restart?.deadline) {
+                    const remainingSec = Math.max(0, Math.ceil((state.restart.deadline - Date.now()) / 1000));
+                    document.getElementById('restartTimerBadge').innerText = `T-${remainingSec}s`;
+                }
             }
         });
 
         socket.on('round:choice_made', (data) => {
-            if (data.role === myRole) {
-                document.getElementById('choiceStatus').innerText = 'Twój wybór zapisany! Oczekiwanie na rywala...';
-            } else {
-                document.getElementById('choiceStatus').innerText = 'Rywal podjął decyzję! Twój ruch!';
-            }
+            log('CHOICE', `Gracz ${data.role} zapisał swój wybór.`);
         });
 
         socket.on('round:resolved', (data) => {
-            setButtonsDisabled(true);
-            log(`<b>WYNIK:</b> Strzał: [${data.strikerZone}], Obrona: [${data.keeperZone}] -> <b>${data.result.outcome}</b> (${data.result.details})`);
-            document.getElementById('choiceStatus').innerText = `Wynik: ${data.result.outcome}!`;
+            const outcomeBox = document.getElementById('roundOutcomeBox');
+            const outcomeText = document.getElementById('roundOutcomeText');
+            outcomeBox.style.display = 'flex';
+            outcomeText.innerHTML = `<b>WYNIK RUNDY ${data.round}:</b> Strzał: [${data.strikerZone}], Obrona: [${data.keeperZone}] &rarr; <b>${data.result.outcome}</b> (${data.result.details})`;
+
+            const resultBadge = document.getElementById('roundResultBadge');
+            resultBadge.innerText = data.result.outcome;
+
+            log('RESOLVE', `Runda ${data.round}: Strzał [${data.strikerZone}] vs Obrona [${data.keeperZone}] &rarr; ${data.result.outcome} (+${data.result.pointsAwarded || 0} pkt)`);
         });
 
         socket.on('game:over', (data) => {
-            const winnerName = data.winner === 'REMIS' ? 'REMIS!' : (data.winner === 'player_1' ? 'WYGRAŁ GRACZ 1!' : 'WYGRAŁ GRACZ 2!');
-            document.getElementById('winnerText').innerText = winnerName;
-            document.getElementById('finalScoreText').innerText = `Wynik końcowy: Gracz 1 (${data.scores.player_1} pkt) — Gracz 2 (${data.scores.player_2} pkt)`;
-            log(`<b>Koniec gry!</b> ${winnerName} (${data.scores.player_1} : ${data.scores.player_2})`);
-        });
-
-        // Полный сброс комнаты
-        socket.on('room:hard_reset', () => {
-            myRole = null;
-            document.getElementById('myRole').innerText = 'Nie wybrano';
-            log('Pokój został całkowicie zresetowany.');
+            const winner = data.winner === 'REMIS' ? 'REMIS!' : (data.winner === 'player_1' ? 'WYGRAŁ GRACZ 1 (P1)!' : 'WYGRAŁ GRACZ 2 (P2)!');
+            document.getElementById('finalWinnerText').innerText = winner;
+            document.getElementById('finalScoreDetails').innerText = `Wynik końcowy: Gracz 1 (${data.scores.player_1} pkt) — Gracz 2 (${data.scores.player_2} pkt)`;
+            log('RESOLVE', `Koniec meczu! ${winner} Wynik: ${data.scores.player_1} : ${data.scores.player_2}`);
         });
 
         function selectRole(role) {
             socket.emit('player:select_role', role);
+            log('ROLE', `Wysłano żądanie wyboru roli: ${role}`);
         }
 
-        function submitCharacter(h, b, l) {
+        function setPreset(h, b, l) {
+            document.getElementById('inputHead').value = h;
+            document.getElementById('inputBody').value = b;
+            document.getElementById('inputLegs').value = l;
+        }
+
+        function submitCustomCharacter() {
+            const h = Number(document.getElementById('inputHead').value) || 1;
+            const b = Number(document.getElementById('inputBody').value) || 1;
+            const l = Number(document.getElementById('inputLegs').value) || 1;
+
             socket.emit('character:submit', { headId: h, bodyId: b, legsId: l });
-            document.getElementById('btnCharA').disabled = true;
-            document.getElementById('btnCharB').disabled = true;
-            document.getElementById('customStatus').innerText = 'Zapisano! Oczekiwanie na rywala...';
+            document.getElementById('btnSubmitChar').disabled = true;
+            document.getElementById('customStatusMsg').innerText = `Zatwierdzono postać {head:${h}, body:${b}, legs:${l}}. Oczekiwanie na rywala...`;
+            log('SYS', `Wysłano dane postaci: { head: ${h}, body: ${b}, legs: ${l} }`);
         }
 
-        function chooseZone(zoneId) {
-            if (hasChosenThisRound) return;
-            hasChosenThisRound = true;
-            setButtonsDisabled(true);
+        function sendZoneChoice(zoneId) {
+            if (hasChosenZone) return;
+            hasChosenZone = true;
+
+            highlightSelectedButton(zoneId);
+            updateTargetButtonsDisabled(true);
+
             socket.emit('game:choose_zone', zoneId);
-            document.getElementById('choiceStatus').innerText = `Wybrano strefę ${zoneId}...`;
+            log('CHOICE', `Wysłano wybór strefy: [${zoneId}]`);
         }
 
-        function restartGame() {
+        function highlightSelectedButton(zoneId) {
+            for (let i = 1; i <= 5; i++) {
+                const btn = document.getElementById(`btnZone${i}`);
+                if (btn) {
+                    if (i === zoneId) btn.classList.add('btn-selected');
+                    else btn.classList.remove('btn-selected');
+                }
+            }
+        }
+
+        function updateTargetButtonsDisabled(disabled) {
+            for (let i = 1; i <= 5; i++) {
+                const btn = document.getElementById(`btnZone${i}`);
+                if (btn) btn.disabled = disabled;
+            }
+            if (!disabled) {
+                highlightSelectedButton(null);
+            }
+        }
+
+        function voteRestart() {
             socket.emit('game:restart');
+            document.getElementById('btnVoteRestart').disabled = true;
+            log('SYS', 'Wysłano głos za natychmiastowym restartem meczu.');
         }
 
-        function hardReset() {
-            socket.emit('room:force_reset');
+        function forceResetRoom() {
+            if (confirm('Czy na pewno chcesz wykonać PEŁNY TWARDY RESET pokoju?')) {
+                socket.emit('room:force_reset');
+                log('SYS', 'Wysłano polecenie twardego resetu pokoju.');
+            }
         }
+
+        function simulateDisconnect() {
+            if (socket.connected) {
+                socket.disconnect();
+                log('DC', 'Symulacja: socket.disconnect() wywołany ręcznie.');
+            }
+        }
+
+        function manualReconnect() {
+            if (!socket.connected) {
+                socket.connect();
+            } else if (mySessionToken) {
+                log('RECON', 'Wymuszenie ponownego zgłoszenia sesji...');
+                socket.emit('player:reconnect', { sessionToken: mySessionToken, role: savedRole });
+            }
+        }
+
+        updateSessionUI();
     </script>
 </body>
-
 </html>

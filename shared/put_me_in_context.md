@@ -2,7 +2,7 @@
 STADIUM VS (1 VS 1 PENALTY SHOOTOUT) — MASTER SKELETON KEY & FRONTEND BLUEPRINT
 Автономный Мастер-Ключ Архитектуры, Контракты WebSockets и Спецификация UI
 СТАТУС ДОКУМЕНТА: ВЕДУЩИЙ АРХИТЕКТУРНЫЙ КАРКАС И СПЕЦИФИКАЦИЯ ИНТЕГРАЦИИ
-ВЕРСИЯ ДОКУМЕНТА: v1.0.0 (Pre-Flight Certified, LAN Kiosk Edition)
+ВЕРСИЯ ДОКУМЕНТА: v1.1.0 (Synced with server/src/gameRoom.js @ main, 2026-09-20)
 ЛОКАЛИЗАЦИЯ: Польский язык (Język polski — терминология, статусы, интерфейс)
 ================================================================================
 
@@ -84,8 +84,14 @@ STADIUM VS (1 VS 1 PENALTY SHOOTOUT) — MASTER SKELETON KEY & FRONTEND BLUEPRIN
     [CUSTOMIZATION] (Сброс счета в 0:0, роли сохраняются, новый матч)
 
 Исключение:
-- [PAUSED_DISCONNECT] / [room:hard_reset]: при обрыве связи на 10 сек
-  комната делает Hard Reset и возвращается в [LOBBY].
+- [PAUSED_DISCONNECT]: объявлен в GAME_STATES, но НЕ ИСПОЛЬЗУЕТСЯ как активная
+  фаза. При обрыве связи сервер помечает игрока отключённым, эмитит
+  room:player_disconnected и запускает таймер на 10 секунд.
+  Если отключившийся игрок присылает player:reconnect с валидным sessionToken
+  до истечения таймаута — таймер сброса отменяется, и матч продолжается
+  с того же места (эмитится room:player_reconnected).
+  Если за 10 секунд игрок не вернулся — вызывается handleForceReset() →
+  room:hard_reset, и комната возвращается в [LOBBY] напрямую из любой фазы.
 
 ================================================================================
 РАЗДЕЛ 3: РЕЕСТР WEBSOCKET-СОБЫТИЙ (SOCKET.IO CONTRACTS)
@@ -127,6 +133,15 @@ A. КЛИЕНТ -> СЕРВЕР (EMIT)
    - Назначение: Полный сброс комнаты до LOBBY с освобождением ролей.
    - Payload: отсутствует
 
+6. player:reconnect
+   - Фаза: ЛЮБАЯ (при повторном подключении сокета после обрыва)
+   - Назначение: Восстановление роли и текущей сессии без сброса матча.
+   - Payload:
+     {
+       sessionToken: string, // UUID сессии, полученный при role:assigned
+       role?: "player_1" | "player_2"
+     }
+
 --------------------------------------------------------------------------------
 B. СЕРВЕР -> КЛИЕНТ (LISTEN)
 --------------------------------------------------------------------------------
@@ -151,14 +166,25 @@ B. СЕРВЕР -> КЛИЕНТ (LISTEN)
        scores: {
          player_1: number, // Текущие очки Gracz 1
          player_2: number  // Текущие очки Gracz 2
+       },
+       characters: {
+         player_1: { headId, bodyId, legsId } | null, // Персонаж Gracz 1 (null до подтверждения)
+         player_2: { headId, bodyId, legsId } | null  // Персонаж Gracz 2 (null до подтверждения)
+       },
+       restart: {
+         player_1_ready: boolean, // Проголосовал ли Gracz 1 за рестарт
+         player_2_ready: boolean, // Проголосовал ли Gracz 2 за рестарт
+         deadline: number | null  // epoch ms дедлайна голосования; null вне GAME_OVER
        }
      }
 
 2. role:assigned
-   - Назначение: Подтверждение серверного назначения роли данному сокету.
+   - Назначение: Подтверждение серверного назначения роли данному сокету (или восстановления).
    - Payload:
      {
-       role: "player_1" | "player_2"
+       role: "player_1" | "player_2",
+       sessionToken: string,  // Уникальный ключ сессии для реконнекта
+       reconnected?: boolean  // true, если вызов произошёл по player:reconnect
      }
 
 3. round:choice_made
@@ -215,15 +241,22 @@ B. СЕРВЕР -> КЛИЕНТ (LISTEN)
        timeoutSec: number // Например, 10
      }
 
-7. room:hard_reset
+7. room:player_reconnected
+   - Назначение: Игрок успешно вернулся в матч по sessionToken до истечения таймаута.
+   - Payload:
+     {
+       role: "player_1" | "player_2"
+     }
+
+8. room:hard_reset
    - Назначение: Комната сброшена до начального состояния. Клиент обязан
      очистить локальную роль (myRole = null) и показать экран LOBBY.
 
-8. room:error
-   - Назначение: Системная ошибка (например, попытка занять занятый слот).
+9. room:error
+   - Назначение: Системная ошибка (например, попытка занять занятый слот или неверный токен).
    - Payload:
      {
-       code: "ROLE_TAKEN" | "ROOM_FULL",
+       code: "ROLE_TAKEN" | "RECONNECT_FAILED",
        message: string
      }
 
@@ -393,5 +426,63 @@ B. СЕРВЕР -> КЛИЕНТ (LISTEN)
    актуальная реализация сцены "оба персонажа видны на поле" описана в
    client/src/screens/GameScreen/, README не дублируем здесь).
 
+5. state:sync РАССЫЛАЕТСЯ ПРИ ПОДКЛЮЧЕНИИ НОВОГО СОКЕТА.
+
+   server.js: io.on('connection', (socket) => { room.broadcastState(); ... }).
+   Любой новый клиент мгновенно получает полный снэпшот текущего состояния
+   комнаты без необходимости явно запрашивать его. В исходном контракте
+   (Раздел 3.B.1) это подразумевалось, но не было прописано эксплицитно.
+
+6. broadcastState() ПОСЛЕ КАЖДОГО ИНДИВИДУАЛЬНОГО ВЫБОРА ЗОНЫ.
+
+   Было (неявно): state:sync рассылался только при resolveRound(), т.е. когда
+   выбрали ОБА игрока. Стало: handleMakeChoice() вызывает broadcastState()
+   сразу после записи зоны одного игрока — choicesStatus.player_X_chosen
+   обновляется в реальном времени, клиент может заблокировать кнопки и
+   показать «Twój wybór zapisany» по state:sync, а не только по
+   round:choice_made.
+
+   Реализация: server/src/gameRoom.js, handleMakeChoice(), строка после
+   io.emit('round:choice_made', ...). Если планируется троттлинг рассылок —
+   этот вызов можно убрать без последствий для текущего фронтенда (клиент
+   дублирует замок выбора локально).
+
+7. PAUSED_DISCONNECT — ДЕКЛАРАТИВНОЕ СОСТОЯНИЕ, НЕ ИСПОЛЬЗУЕТСЯ КАК ФАЗА.
+
+   В GAME_STATES объявлено значение 'PAUSED_DISCONNECT', но ни один
+   обработчик никогда не устанавливает this.state = PAUSED_DISCONNECT.
+   Фактический флоу дисконнекта: handleDisconnect() → пометка
+   isConnected=false → emit room:player_disconnected → setTimeout(10s) →
+   handleForceReset() → hardResetRoom() → LOBBY. Комната остаётся в
+   текущей фазе (PLAYING, CUSTOMIZATION, ...) весь период ожидания
+   реконнекта.
+
+   FSM-диаграмма Раздела 2 обновлена соответственно.
+
+8. room:error — КОД "ROOM_FULL" НЕ ЭМИТИТСЯ.
+
+   Раздел 3.B.8 описывал коды ROLE_TAKEN | ROOM_FULL. В реализации
+   handleSelectRole() эмитит только ROLE_TAKEN (если конкретный слот занят).
+   Ситуация «комната полна» не генерирует ошибку: когда оба слота заняты,
+   state уже !== LOBBY, и handleSelectRole() выходит молча (return).
+   Код ROOM_FULL убран из канонического payload в Разделе 3.
+
+9. ВОССТАНОВЛЕНИЕ СЕССИИ (RECONNECT) БЕЗ СБРОСА КОМНАТЫ.
+
+   В handleSelectRole() сервер генерирует криптографический sessionToken
+   (crypto.randomUUID()) и возвращает его клиенту в событии role:assigned:
+   { role, sessionToken }.
+   При кратковременном обрыве соединения (Wi-Fi на стенде, смена сокета)
+   клиент отправляет socket.emit('player:reconnect', { sessionToken, role? }).
+   Сервер верифицирует токен, восстанавливает socket.role, привязывает
+   новый socketId, отменяет 10-секундный disconnectTimer и возвращает
+   игрока в активный матч без сброса раунда и счёта.
+   Если токен неверен или комната уже была сброшена по таймауту — сервер
+   эмитит room:error с кодом RECONNECT_FAILED.
+   Клиентская тестовая панель (server/public/index.html) автоматически сохраняет
+   sessionToken в localStorage и производит прозрачный реконнект при
+   восстановлении связи.
+
 ================================================================================
 --- END OF FILE PROJECT_SKELETON_KEY.txt ---
+
