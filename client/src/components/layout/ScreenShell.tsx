@@ -34,7 +34,7 @@ export default function ScreenShell({ children, tone = "light", backgroundImage,
           : undefined
       }
     >
-      <div className="h-full w-full overflow-y-auto overscroll-contain">{children}</div>
+      <div className="h-full w-full overflow-x-hidden overflow-y-auto overscroll-contain">{children}</div>
     </div>
   );
 }

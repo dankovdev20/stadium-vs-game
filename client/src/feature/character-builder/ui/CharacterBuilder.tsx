@@ -3,36 +3,45 @@ import GameButton from "../../../components/ui/Button";
 import type { CharacterSelection } from "../../../game/types";
 import { HEAD_OPTIONS, BODY_OPTIONS, LEGS_OPTIONS } from "../model/options";
 import { useCharacterBuilder } from "../model/useCharacterBuilder";
-import CategoryColumn from "./CategoryColumn";
-import CharacterSprite from "./CharacterSprite";
+import CategoryTabs from "./CategoryTabs";
+import OptionGrid from "./OptionGrid";
+import PodiumStage from "./PodiumStage";
 
 interface CharacterBuilderProps {
   onSubmit: (character: CharacterSelection) => void;
   disabled?: boolean;
 }
 
-// Раскладка "стенд": панели выбора — узкими колонками слева (умещены
-// горизонтально одна к другой, варианты внутри каждой — вертикально),
-// крупный стенд персонажа — справа. Рассчитано на фикс 1920×1080 без
-// прокрутки — раньше три Panel на всю ширину экрана не влезали по высоте
-// и кнопку подтверждения было не докрутить (см. ScreenShell).
+// Раскладка "przymierzalnia" (примерочная): слева — панель с табами
+// категорий и сеткой крупных карточек-вариантов активной категории,
+// справа — подиум с манекеном на всю высоту (см. PodiumStage). Рассчитано
+// на фикс 1920×1080 без прокрутки (см. ScreenShell) — обе панели заняты
+// содержимым почти целиком, свободного места не остаётся.
 export default function CharacterBuilder({ onSubmit, disabled = false }: CharacterBuilderProps) {
-  const { headId, bodyId, legsId, setHeadId, setBodyId, setLegsId, character } = useCharacterBuilder();
+  const { headId, bodyId, legsId, setHeadId, setBodyId, setLegsId, activeCategory, setActiveCategory, character } =
+    useCharacterBuilder();
+
+  const active =
+    activeCategory === "head"
+      ? { options: HEAD_OPTIONS, selectedId: headId, onSelect: setHeadId }
+      : activeCategory === "body"
+        ? { options: BODY_OPTIONS, selectedId: bodyId, onSelect: setBodyId }
+        : { options: LEGS_OPTIONS, selectedId: legsId, onSelect: setLegsId };
 
   return (
     <div className="flex h-full w-full gap-6">
-      <div className="flex h-full gap-3">
-        <CategoryColumn title="Głowa" options={HEAD_OPTIONS} selectedId={headId} onSelect={setHeadId} disabled={disabled} />
-        <CategoryColumn title="Korpus" options={BODY_OPTIONS} selectedId={bodyId} onSelect={setBodyId} disabled={disabled} />
-        <CategoryColumn title="Nogi" options={LEGS_OPTIONS} selectedId={legsId} onSelect={setLegsId} disabled={disabled} />
-      </div>
+      <Panel tone="dark" className="flex h-full w-[500px] shrink-0 flex-col gap-4 px-6 py-6">
+        <p className="text-center font-[Poppins] text-sm font-bold uppercase tracking-widest text-white/70">Przymierzalnia</p>
+        <CategoryTabs active={activeCategory} onChange={setActiveCategory} />
+        <OptionGrid category={activeCategory} options={active.options} selectedId={active.selectedId} onSelect={active.onSelect} disabled={disabled} />
+      </Panel>
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-8">
-        <Panel tone="dark" className="flex items-center justify-center px-20 py-14">
-          <CharacterSprite character={character} size="xl" />
+      <div className="flex h-full flex-1 flex-col gap-4">
+        <Panel tone="dark" className="min-h-0 flex-1 overflow-hidden px-6 py-6">
+          <PodiumStage character={character} />
         </Panel>
 
-        <GameButton onClick={() => onSubmit(character)} disabled={disabled}>
+        <GameButton onClick={() => onSubmit(character)} disabled={disabled} className="self-center">
           {disabled ? "Oczekiwanie na rywala..." : "ZATWIERDŹ POSTAĆ"}
         </GameButton>
       </div>
