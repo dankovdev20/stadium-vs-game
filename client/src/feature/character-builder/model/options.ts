@@ -1,42 +1,46 @@
-import { Crown, Glasses, Star, Ghost, Shirt, Shield, Flame, Gem, Footprints, Rocket, Wind, Zap, type LucideIcon } from "lucide-react";
-
 export interface CharacterOption {
   id: number;
   label: string;
-  colorClass: string;
-  icon: LucideIcon;
-  /**
-   * Точка замены заглушки на реальный арт: если задано, OptionCard и
-   * PreviewStack подставляют <img src={imageUrl}> вместо цветной плашки
-   * с иконкой — остальной код конструктора не меняется.
-   */
-  imageUrl?: string;
+  /** Какую SVG-геометрию рисовать для этой опции (см. ../svg/parts/*). */
+  variant: string;
+  /** Значения подставляются как CSS-переменные --part-primary/--part-accent/--part-metal. */
+  palette: { primary: string; accent: string; metal?: string };
+  tagline?: string;
 }
 
+// Głowa: "primary" — цвет волос, "accent" — цвет причёски/аксессуара.
 export const HEAD_OPTIONS: CharacterOption[] = [
-  { id: 1, label: "Korona", colorClass: "bg-[var(--color-gold-500)]", icon: Crown },
-  { id: 2, label: "Okulary", colorClass: "bg-[var(--color-sky-500)]", icon: Glasses },
-  { id: 3, label: "Gwiazda", colorClass: "bg-[var(--color-danger-500)]", icon: Star },
-  { id: 4, label: "Duch", colorClass: "bg-[var(--color-grass-300)]", icon: Ghost },
+  { id: 1, label: "Bandana", variant: "bandana", palette: { primary: "#5b3a29", accent: "#e5484d" }, tagline: "Gotowy do gry" },
+  { id: 2, label: "Czapka", variant: "cap", palette: { primary: "#e8c07d", accent: "#2d7dd2" }, tagline: "Styl kapitana" },
+  { id: 3, label: "Loki", variant: "curls", palette: { primary: "#d97a3d", accent: "#f0a868" }, tagline: "Fryzura z charakterem" },
+  { id: 4, label: "Kucyk", variant: "ponytail", palette: { primary: "#2b2320", accent: "#ff6f91" }, tagline: "Szybka jak wiatr" },
+  { id: 5, label: "Irokez", variant: "mohawk", palette: { primary: "#40916c", accent: "#6fbf8b" }, tagline: "Odważny wybór" },
+  { id: 6, label: "Korona", variant: "crown", palette: { primary: "#ffc93c", accent: "#2d7dd2" }, tagline: "Król boiska" },
 ];
 
+// Korpus: "primary" — цвет джерси, "accent" — цвет отделки/эмблемы.
 export const BODY_OPTIONS: CharacterOption[] = [
-  { id: 1, label: "Koszulka", colorClass: "bg-[var(--color-sky-500)]", icon: Shirt },
-  { id: 2, label: "Tarcza", colorClass: "bg-[var(--color-gold-500)]", icon: Shield },
-  { id: 3, label: "Płomień", colorClass: "bg-[var(--color-danger-500)]", icon: Flame },
-  { id: 4, label: "Kryształ", colorClass: "bg-[var(--color-grass-300)]", icon: Gem },
+  { id: 1, label: "Odznaka", variant: "badge", palette: { primary: "#2d7dd2", accent: "#ffd166" }, tagline: "Klasyczna koszulka" },
+  { id: 2, label: "Szarfa", variant: "sash", palette: { primary: "#f1efe7", accent: "#e5484d", metal: "#7a6a55" }, tagline: "Przez pierś na ukos" },
+  { id: 3, label: "Opaska", variant: "armband", palette: { primary: "#1b4332", accent: "#ffc93c" }, tagline: "Kapitan drużyny" },
+  { id: 4, label: "Manishka", variant: "vest", palette: { primary: "#c9c4b4", accent: "#f2994a", metal: "#7a6a55" }, tagline: "Trening przed meczem" },
+  { id: 5, label: "Gwiazda", variant: "star", palette: { primary: "#1c5a9c", accent: "#ffd166" }, tagline: "Gwiazda boiska" },
+  { id: 6, label: "Bramkarska", variant: "keeper", palette: { primary: "#ffc93c", accent: "#2b2320" }, tagline: "Broni jak mur" },
 ];
 
+// Nogi: "primary" — цвет шорт, "accent" — цвет гольфов/окантовки бутс.
 export const LEGS_OPTIONS: CharacterOption[] = [
-  { id: 1, label: "Kroki", colorClass: "bg-[var(--color-grass-300)]", icon: Footprints },
-  { id: 2, label: "Rakieta", colorClass: "bg-[var(--color-gold-500)]", icon: Rocket },
-  { id: 3, label: "Wiatr", colorClass: "bg-[var(--color-sky-500)]", icon: Wind },
-  { id: 4, label: "Błyskawica", colorClass: "bg-[var(--color-danger-500)]", icon: Zap },
+  { id: 1, label: "Korki", variant: "cleats", palette: { primary: "#2b2320", accent: "#f1efe7" }, tagline: "Pewny krok" },
+  { id: 2, label: "Rakietowe", variant: "rocket", palette: { primary: "#e5484d", accent: "#ffd166" }, tagline: "Odrzutowy start" },
+  { id: 3, label: "Rolki", variant: "rollers", palette: { primary: "#2d7dd2", accent: "#c9c4b4" }, tagline: "Płynny poślizg" },
+  { id: 4, label: "Sprężynowe", variant: "springs", palette: { primary: "#40916c", accent: "#ffc93c" }, tagline: "Wysoki wyskok" },
+  { id: 5, label: "Wysokie", variant: "hightops", palette: { primary: "#7c5cbf", accent: "#ff6f91" }, tagline: "Wysoki styl" },
+  { id: 6, label: "Turbo", variant: "turbo", palette: { primary: "#5b6472", accent: "#e5484d" }, tagline: "Moc turbiny" },
 ];
 
 // Переиспользуется везде, где по id из CharacterSelection нужно достать
-// иконку/цвет варианта: PreviewStack в конструкторе и CharacterSprite на
-// игровом поле (screens/GameScreen/ui) — единственное место с этой логикой.
+// опцию варианта: конструктор персонажа и CharacterSprite на игровом поле
+// (screens/GameScreen/ui) — единственное место с этой логикой.
 export function getOptionById(options: CharacterOption[], id: number): CharacterOption {
   return options.find((o) => o.id === id) ?? options[0];
 }
