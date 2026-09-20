@@ -1,4 +1,5 @@
 // src/gameRoom.js
+import crypto from 'crypto';
 import { resolveShot } from './gameRules.js';
 
 export const GAME_STATES = {
@@ -79,21 +80,23 @@ export class GameRoom {
         if (this.state !== GAME_STATES.LOBBY) return;
         if (requestedRole !== 'player_1' && requestedRole !== 'player_2') return;
 
-        if (this.players[requestedRole] && this.players[requestedRole].isConnected) {
+        if (this.players[requestedRole] && (this.players[requestedRole].isConnected || this.players[requestedRole].sessionToken)) {
             socket.emit('room:error', { code: 'ROLE_TAKEN', message: 'Ta rola jest już zajęta!' });
             return;
         }
 
+        const sessionToken = crypto.randomUUID();
         socket.role = requestedRole;
         this.players[requestedRole] = {
             socketId: socket.id,
             ready: false,
             character: null,
             score: 0,
-            isConnected: true
+            isConnected: true,
+            sessionToken
         };
 
-        socket.emit('role:assigned', { role: requestedRole });
+        socket.emit('role:assigned', { role: requestedRole, sessionToken });
 
         // Если оба выбрали роли — сразу переходим к созданию персонажа
         if (this.players.player_1?.isConnected && this.players.player_2?.isConnected) {
@@ -295,9 +298,57 @@ export class GameRoom {
             timeoutSec: RECONNECT_TIMEOUT_MS / 1000
         });
 
-        this.disconnectTimer = setTimeout(() => {
-            this.handleForceReset();
-        }, RECONNECT_TIMEOUT_MS);
+        if (!this.disconnectTimer) {
+            this.disconnectTimer = setTimeout(() => {
+                this.handleForceReset();
+            }, RECONNECT_TIMEOUT_MS);
+        }
+
+        this.broadcastState();
+    }
+
+    // Восстановление сессии при повторном подключении сокета
+    handleReconnect(socket, payload) {
+        if (!payload) {
+            socket.emit('room:error', { code: 'RECONNECT_FAILED', message: 'Brak danych sesji.' });
+            return;
+        }
+
+        const token = typeof payload === 'string' ? payload : (payload.sessionToken || payload.token);
+        let role = typeof payload === 'object' ? payload.role : null;
+
+        if (!role && token) {
+            if (this.players.player_1?.sessionToken === token) role = 'player_1';
+            else if (this.players.player_2?.sessionToken === token) role = 'player_2';
+        }
+
+        if (!role || !this.players[role] || !this.players[role].sessionToken || this.players[role].sessionToken !== token) {
+            socket.emit('room:error', { code: 'RECONNECT_FAILED', message: 'Nieprawidłowy token sesji lub pokój został zresetowany.' });
+            return;
+        }
+
+        socket.role = role;
+        this.players[role].socketId = socket.id;
+        this.players[role].isConnected = true;
+
+        // Если оба игрока теперь подключены, отменяем таймер сброса по дисконнекту
+        const otherRole = role === 'player_1' ? 'player_2' : 'player_1';
+        const otherPlayer = this.players[otherRole];
+        if (!otherPlayer || otherPlayer.isConnected) {
+            if (this.disconnectTimer) {
+                clearTimeout(this.disconnectTimer);
+                this.disconnectTimer = null;
+            }
+        }
+
+        socket.emit('role:assigned', {
+            role,
+            sessionToken: token,
+            reconnected: true
+        });
+
+        this.io.emit('room:player_reconnected', { role });
+        this.broadcastState();
     }
 
     broadcastState() {

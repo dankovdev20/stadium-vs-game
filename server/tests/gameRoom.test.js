@@ -150,3 +150,75 @@ describe('3. Głosowanie "Zagraj ponownie" i auto-reset przy bezczynności (game
         assert.strictEqual(room.state, GAME_STATES.PLAYING); // mecz nie przerwany mimo symulowanego czasu
     });
 });
+
+describe('4. Reconnect i odzyskiwanie sesji (gameRoom.js)', () => {
+    let room;
+    let io;
+    let socket1;
+    let socket2;
+
+    beforeEach((t) => {
+        t.mock.timers.enable({ apis: ['setTimeout'] });
+        io = new MockIO();
+        room = new GameRoom(io);
+        socket1 = new MockSocket('sock_1');
+        socket2 = new MockSocket('sock_2');
+        room.handleSelectRole(socket1, 'player_1');
+        room.handleSelectRole(socket2, 'player_2');
+    });
+
+    it('Gracz może odzyskać rolę po zerwaniu połączenia używając sessionToken', (t) => {
+        const token1 = room.players.player_1.sessionToken;
+        assert.ok(token1, 'sessionToken musi być wygenerowany');
+
+        // Przejście do PLAYING
+        room.handleCharacterReady(socket1, { headId: 1, bodyId: 1, legsId: 1 });
+        room.handleCharacterReady(socket2, { headId: 2, bodyId: 2, legsId: 2 });
+        assert.strictEqual(room.state, GAME_STATES.PLAYING);
+
+        // Rozłączenie socket1
+        room.handleDisconnect(socket1);
+        assert.strictEqual(room.players.player_1.isConnected, false);
+        assert.notStrictEqual(room.disconnectTimer, null);
+
+        // Nowe połączenie z tym samym tokenem
+        const newSocket = new MockSocket('sock_reconnected');
+        room.handleReconnect(newSocket, { sessionToken: token1 });
+
+        assert.strictEqual(newSocket.role, 'player_1');
+        assert.strictEqual(room.players.player_1.isConnected, true);
+        assert.strictEqual(room.players.player_1.socketId, 'sock_reconnected');
+        assert.strictEqual(room.disconnectTimer, null);
+
+        // Po 10 sekundach mecz nadal trwa i nie został zresetowany
+        t.mock.timers.tick(10000);
+        assert.strictEqual(room.state, GAME_STATES.PLAYING);
+        assert.strictEqual(room.players.player_1.isConnected, true);
+    });
+
+    it('Próba reconnectu z niepoprawnym tokenem jest odrzucana', () => {
+        const fakeSocket = new MockSocket('sock_fake');
+        room.handleReconnect(fakeSocket, { sessionToken: 'invalid_token_123' });
+
+        assert.strictEqual(fakeSocket.role, null);
+        const err = fakeSocket.emitted.find((e) => e.event === 'room:error');
+        assert.ok(err);
+        assert.strictEqual(err.data.code, 'RECONNECT_FAILED');
+    });
+
+    it('Po upływie czasu oczekiwania (10s) pokój resetuje się i token wygasa', (t) => {
+        const token1 = room.players.player_1.sessionToken;
+        room.handleDisconnect(socket1);
+
+        t.mock.timers.tick(10000);
+        assert.strictEqual(room.state, GAME_STATES.LOBBY);
+        assert.strictEqual(room.players.player_1, null);
+
+        // Próba spóźnionego powrotu
+        const lateSocket = new MockSocket('sock_late');
+        room.handleReconnect(lateSocket, { sessionToken: token1 });
+        assert.strictEqual(lateSocket.role, null);
+        const err = lateSocket.emitted.find((e) => e.event === 'room:error');
+        assert.strictEqual(err.data.code, 'RECONNECT_FAILED');
+    });
+});

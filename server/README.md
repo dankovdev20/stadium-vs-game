@@ -29,12 +29,13 @@ npm start   # сервер на 0.0.0.0:3000 (доступен по локаль
 
 | Метод | Клиентское событие | Что делает |
 |---|---|---|
-| `handleSelectRole` | `player:select_role` | Занимает слот `player_1`/`player_2`. Оба заняты → `CUSTOMIZATION`. |
+| `handleSelectRole` | `player:select_role` | Занимает слот `player_1`/`player_2`, генерирует криптографический `sessionToken` (`role:assigned`). Оба заняты → `CUSTOMIZATION`. |
 | `handleCharacterReady` | `character:submit` | Сохраняет `character` игрока, ставит `ready`. Оба `ready` → `PLAYING`. |
-| `handleMakeChoice` | `game:choose_zone` | Барьерная синхронизация: ждёт зону от ОБОИХ (`strikerRole`+`keeperRole`) прежде чем звать `resolveRound()`. |
+| `handleMakeChoice` | `game:choose_zone` | Барьерная синхронизация: ждёт зону от ОБОИХ (`strikerRole`+`keeperRole`) прежде чем звать `resolveRound()`. Рассылает `state:sync` сразу после одиночного выбора. |
+| `handleReconnect` | `player:reconnect` | Восстанавливает роль, socketId и статус подключения по `sessionToken` без сброса раунда/матча. Отменяет `disconnectTimer`. |
 | `handleRestartGame` | `game:restart` | Голос за рестарт после `GAME_OVER` — см. ниже, отдельный раздел. |
 | `handleForceReset` | `room:force_reset` | Мгновенный полный сброс в `LOBBY` (кнопка/таймаут/дисконнект — единая точка входа). |
-| `handleDisconnect` | (socket `disconnect`) | Помечает игрока отключённым, шлёт `room:player_disconnected`, через 10 сек — `handleForceReset()`, если не переподключился. |
+| `handleDisconnect` | (socket `disconnect`) | Помечает игрока отключённым, шлёт `room:player_disconnected`, запускает 10-секундный таймер на `handleForceReset()`. Если игрок переподключается с `sessionToken` через `player:reconnect` — таймер отменяется и игра продолжается. |
 
 ### Три вида таймеров
 
@@ -43,7 +44,9 @@ npm start   # сервер на 0.0.0.0:3000 (доступен по локаль
 стреляющих в уже сброшенную комнату.
 
 1. **`disconnectTimer`** (`RECONNECT_TIMEOUT_MS`, 10 сек) — обрыв сокета в
-   любой фазе → полный сброс, если не восстановился.
+   любой фазе запускает 10-секундное окно grace period: игрок может вернуться
+   через `player:reconnect` по сохранённому `sessionToken`. Если не восстановился —
+   вызывается `handleForceReset()` и комната уходит в `LOBBY`.
 2. **`restartTimer`** (`RESTART_VOTE_TIMEOUT_MS`, 10 сек) — заводится в
    `finishGame()`. Голосование "Играть снова" (см. ниже).
 3. **`idleTimer`** (`IDLE_TIMEOUT_MS`, 90 сек) — заводится/перевооружается
@@ -96,7 +99,9 @@ npm start   # сервер на 0.0.0.0:3000 (доступен по локаль
   вероятность гола.
 - `tests/gameRoom.test.js` — барьерная синхронизация выбора зон, занятие
   ролей, голосование за рестарт (оба голосуют / только один → таймаут),
-  idle-автосброс (срабатывает в LOBBY/CUSTOMIZATION, не срабатывает в PLAYING).
+  idle-автосброс (срабатывает в LOBBY/CUSTOMIZATION, не срабатывает в PLAYING),
+  а также восстановление сессии (`player:reconnect` по `sessionToken` с отменой
+  сброса комнаты). Всего 12 тестов (12/12 pass).
 
 Тесты таймеров используют `t.mock.timers` (Node ≥ 20.4) — время не ждём
 по-настоящему. **Если добавляете вызов, который заводит `setTimeout`

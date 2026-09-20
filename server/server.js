@@ -46,6 +46,11 @@ io.on('connection', (socket) => {
         room.handleForceReset();
     });
 
+    // 6. Восстановление сессии при реконнекте сокета
+    socket.on('player:reconnect', (payload) => {
+        room.handleReconnect(socket, payload);
+    });
+
     socket.on('disconnect', () => {
         room.handleDisconnect(socket);
     });
