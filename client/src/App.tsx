@@ -44,7 +44,7 @@ export default function App() {
       {phase === "CUSTOMIZATION" && <CustomizationScreen />}
       {(phase === "PLAYING" || phase === "ROUND_RESULT") && <GameScreen />}
       {phase === "GAME_OVER" && (
-        <ScreenShell tone="light">
+        <ScreenShell tone="dark">
           <div className="flex min-h-[100dvh] items-center justify-center">
             <p className="font-[Poppins] font-semibold text-white/90">Koniec meczu...</p>
           </div>

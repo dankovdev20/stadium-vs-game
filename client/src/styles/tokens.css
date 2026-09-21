@@ -8,9 +8,9 @@
  */
 :root {
   /* Трава — фон большинства экранов */
-  --color-grass-700: #1b4332;
-  --color-grass-500: #2b8a3e;
-  --color-grass-300: #40916c;
+  --color-grass-700: #173b2b;
+  --color-grass-500: #356b4c;
+  --color-grass-300: #6f9f7f;
 
   /* Небо — баннер роли "Bramkarz", вторичные акценты */
   --color-sky-500: #2d7dd2;

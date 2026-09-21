@@ -27,14 +27,14 @@ export default function ScreenShell({ children, tone = "light", backgroundImage,
 
   return (
     <div
-      className={`relative h-[100dvh] w-full overflow-hidden ${toneClass} ${className}`}
+      className={`relative h-dvh w-full overflow-hidden ${toneClass} ${className}`}
       style={
         backgroundImage
           ? { backgroundImage: `url(${backgroundImage})`, backgroundSize: "cover", backgroundPosition: "center" }
           : undefined
       }
     >
-      <div className="h-full w-full overflow-x-hidden overflow-y-auto overscroll-contain">{children}</div>
+      <div className="relative z-10 h-full w-full overflow-x-hidden overflow-y-auto overscroll-contain">{children}</div>
     </div>
   );
 }
