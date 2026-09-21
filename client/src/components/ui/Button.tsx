@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 interface GameButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart"> {
   children: ReactNode;
   icon?: LucideIcon;
-  variant?: "primary" | "secondary" | "danger" | "striker" | "keeper";
+  variant?: "primary" | "secondary" | "danger" | "striker" | "keeper" | "terminal";
   size?: "md" | "lg" | "zone";
   /** "Выбрано" — золотой outline + лёгкий пульс. Используется зонами удара/защиты. */
   selected?: boolean;
@@ -34,9 +34,14 @@ export default function GameButton({
 
   // Ширина/цвет нижнего "ребра" 3D-тени — своя на вариант, как было исторически.
   const variantStyles = {
-    primary: "bg-[var(--color-gold-500)] border-[var(--color-gold-700)] border-b-[7px]",
-    secondary: "bg-[var(--color-cream-100)] border-[var(--color-cream-300)] border-b-[5px]",
-    danger: "bg-[var(--color-danger-500)] text-white border-[var(--color-danger-700)] border-b-[7px]",
+    primary:
+      "bg-[var(--color-gold-500)] border-b-[7px] border-[var(--color-gold-700)] active:translate-y-[4px] active:border-b-[2px]",
+    secondary:
+      "bg-[var(--color-cream-100)] border-b-[5px] border-[var(--color-cream-300)] active:translate-y-[3px] active:border-b-[2px]",
+    danger:
+      "bg-[var(--color-danger-500)] text-white border-b-[7px] border-[var(--color-danger-700)] active:translate-y-[4px] active:border-b-[2px]",
+    terminal:
+      "min-h-16 rounded-none border-2 border-b-[7px] border-[#8eaf96] border-b-[#1e472d] bg-[#163d27] px-8 font-['Press_Start_2P'] text-sm !text-[#d7e9dc] shadow-[0_0_18px_rgba(142,175,150,0.12)] active:translate-y-1 active:border-b-2 active:border-[#d7e9dc] active:border-b-[#8eaf96] sm:min-h-20 sm:px-12 sm:text-base",
     // Роли на арене: атака — красный, защита — синий (те же токены, что и везде в проекте).
     striker: "bg-[var(--color-danger-500)] text-white border-[var(--color-danger-700)] border-b-[8px]",
     keeper: "bg-[var(--color-sky-500)] text-white border-[var(--color-sky-700)] border-b-[8px]",
