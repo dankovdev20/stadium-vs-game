@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { usePlayAgainModal } from "./feature/play-again/model/usePlayAgainModal";
-import StartScreen from "./screens/StartScreen/StartScreen";
 import LobbyScreen from "./screens/LobbyScreen/LobbyScreen";
 import CustomizationScreen from "./screens/CustomizationScreen/CustomizationScreen";
 import GameScreen from "./screens/GameScreen/GameScreen";
@@ -15,9 +14,6 @@ export default function App() {
   const phase = useGamePhase();
   const { lastGameOver, disconnectedInfo } = useGameState();
   const { showPlayAgainModal, hidePlayAgainModal, isOpen } = usePlayAgainModal();
-
-  // Сплэш перед LOBBY — чисто локальный шаг, сервер о нём не знает.
-  const [hasEnteredLobby, setHasEnteredLobby] = useState(false);
 
   // Kiosk-режим: без контекстного меню на долгом тапе/правом клике (см. index.css).
   useEffect(() => {
@@ -44,8 +40,7 @@ export default function App() {
 
   return (
     <>
-      {phase === "LOBBY" && !hasEnteredLobby && <StartScreen onPlay={() => setHasEnteredLobby(true)} />}
-      {phase === "LOBBY" && hasEnteredLobby && <LobbyScreen />}
+      {phase === "LOBBY" && <LobbyScreen />}
       {phase === "CUSTOMIZATION" && <CustomizationScreen />}
       {(phase === "PLAYING" || phase === "ROUND_RESULT") && <GameScreen />}
       {phase === "GAME_OVER" && (

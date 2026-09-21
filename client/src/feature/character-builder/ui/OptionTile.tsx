@@ -13,7 +13,7 @@ interface OptionTileProps {
 
 // Крупная карточка-превью варианта (взамен старого 80x80 OptionCard):
 // показывает саму часть силуэта, а не иконку-плейсхолдер. Тап даёт
-// пружинистый отклик (та же bounce-bezier, что у ZoneButton), выбранный
+// пружинистый отклик (та же bounce-bezier, что у GameButton), выбранный
 // вариант помечен плашкой "Założone" — читается как "надето", а не просто
 // "выбрано".
 export default function OptionTile({ category, option, selected, onSelect }: OptionTileProps) {
