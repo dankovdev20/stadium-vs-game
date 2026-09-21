@@ -39,7 +39,7 @@ export default function LobbyScreen() {
     };
 
     return (
-      <GameButton
+      <motion.button
         onClick={handleClick}
         disabled={disabled || isMe}
         whileTap={disabled || isMe ? undefined : { scale: 0.97, rotateX: 3, rotateY: -3 }}
@@ -53,10 +53,22 @@ export default function LobbyScreen() {
               : "border-[#a5c7ae]/80 border-b-[#234f38] bg-[#173b2b]/90 text-[#d7e9dc] shadow-[0_0_18px_rgba(215,233,220,0.1)] active:border-[#d7e9dc] active:border-b-[#a5c7ae] active:text-white"
         }`}
       >
-        {label}
-        {disabled && !isMe && " (Zajęty)"}
-        {isMe && " ✓"}
-      </GameButton>
+        <motion.span
+          aria-hidden="true"
+          animate={disabled ? { opacity: 1 } : { opacity: [0.25, 1, 0.25], x: [0, 8, 0] }}
+          transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
+          className={`absolute left-5 top-1/2 -translate-y-1/2 font-['Press_Start_2P'] text-lg sm:text-xl ${
+            disabled ? "text-slate-400" : "text-[#d7e9dc]"
+          }`}
+        >
+          {disabled ? "×" : ">"}
+        </motion.span>
+        <span className="flex items-center justify-center gap-3 text-center">
+          <span>{label}</span>
+          {isMe && <span className="text-xl">✓</span>}
+        </span>
+        {disabled && <span className="text-xs leading-relaxed tracking-normal text-slate-400 sm:text-sm">(Zajety)</span>}
+      </motion.button>
     );
   };
 
@@ -104,7 +116,7 @@ export default function LobbyScreen() {
             />
             <header className="absolute left-5 right-5 top-5 flex items-start justify-between font-['Press_Start_2P'] text-xs uppercase leading-relaxed tracking-normal text-[#d7e9dc] sm:left-12 sm:right-12 sm:top-8 sm:text-sm">
               <span>1UP</span>
-              <span className="text-center text-[#b9d4c0]/80">STADIUM VS</span>
+              <span className="text-center text-[#b9d4c0]/80">PENALTY SHOWDOWN</span>
               <span>2UP</span>
             </header>
 
