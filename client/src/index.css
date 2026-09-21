@@ -44,6 +44,46 @@
 }
 
 /*
+ * Та же история на арене матча (screens/GameScreen/ui/PenaltyScene): вход
+ * персонажа держался на Framer Motion (`AnimatePresence` + `key` на смену
+ * роли каждый раунд) и периодически залипал с opacity:0 навсегда — похоже
+ * на конфликт с состоянием вкладки/паузой рендера именно в момент маунта
+ * (см. подробности разбора в истории коммита). CSS-анимация, которую просто
+ * перезапускает React через смену `key` (пересоздание DOM-узла), настолько
+ * же нативна, как .animate-podium-float выше, и не имеет такого отказа.
+ */
+@keyframes character-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.animate-character-enter {
+  animation: character-enter 0.3s ease-out forwards;
+}
+
+@keyframes arrow-bob {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-30%);
+  }
+}
+
+.animate-arrow-bob {
+  animation: arrow-bob 1.2s ease-in-out infinite;
+}
+
+/*
  * Kiosk-режим (см. shared/put_me_in_context.md, раздел 1.2): два сенсорных
  * терминала, дети от 9 лет — никаких случайных выделений текста, контекстных
  * меню или zoom-жестов не должно мешать игре.
