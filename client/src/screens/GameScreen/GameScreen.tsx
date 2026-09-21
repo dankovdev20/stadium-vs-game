@@ -14,7 +14,7 @@ export default function GameScreen() {
       <div className="relative flex h-full w-full flex-col items-center gap-4 px-4 py-4">
         <Hud currentRound={model.currentRound} totalRounds={model.totalRounds} scores={model.scores} isStriker={model.isStriker} />
 
-        <div className="relative w-full flex-1">
+        <div className="relative min-h-0 w-full flex-1">
           <PenaltyScene
             strikerCharacter={model.strikerCharacter}
             keeperCharacter={model.keeperCharacter}

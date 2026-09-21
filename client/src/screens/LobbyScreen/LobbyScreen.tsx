@@ -1,21 +1,46 @@
+import { useEffect, useState } from "react";
 import ScreenShell from "../../components/layout/ScreenShell";
 import { useGameEmit, useGameState } from "../../game/GameContext";
+import type { PlayerRole } from "../../game/types";
 import { motion } from "motion/react";
 
 export default function LobbyScreen() {
   const emit = useGameEmit();
-  const { sync, myRole } = useGameState();
+  const { sync, myRole, lastError } = useGameState();
+
+  // Локальный "оптимистичный" выбор — ставим его СРАЗУ по тапу, не дожидаясь
+  // ответа сервера (role:assigned). На тач-стенде это закрывает окно в
+  // несколько кадров, за которое можно успеть тапнуть и по второй роли тоже
+  // (сервер сейчас не запрещает одному сокету занять обе роли).
+  const [pendingRole, setPendingRole] = useState<PlayerRole | null>(null);
+
+  // Если сервер отклонил наш выбор (роль уже занята кем-то другим) — снимаем
+  // локальную блокировку, чтобы игрок мог попробовать снова.
+  useEffect(() => {
+    if (lastError?.code === "ROLE_TAKEN" && !myRole) {
+      setPendingRole(null);
+    }
+  }, [lastError, myRole]);
 
   const slots = sync?.slots ?? { player_1_taken: false, player_2_taken: false };
+  // Роль, которую этот клиент уже выбрал (подтверждённо или оптимистично) —
+  // пока она есть, вторая роль с этого же клиента недоступна в принципе.
+  const mySelection = myRole ?? pendingRole;
 
-  const renderSlotButton = (role: "player_1" | "player_2", label: string) => {
+  const renderSlotButton = (role: PlayerRole, label: string) => {
     const taken = role === "player_1" ? slots.player_1_taken : slots.player_2_taken;
-    const isMe = myRole === role;
-    const disabled = taken && !isMe;
+    const isMe = mySelection === role;
+    const disabled = (taken && !isMe) || (mySelection !== null && !isMe);
+
+    const handleClick = () => {
+      if (mySelection) return; // защита от повторного/двойного тапа
+      setPendingRole(role);
+      emit("player:select_role", role);
+    };
 
     return (
-      <motion.button
-        onClick={() => emit("player:select_role", role)}
+      <GameButton
+        onClick={handleClick}
         disabled={disabled || isMe}
         whileTap={disabled || isMe ? undefined : { scale: 0.97, rotateX: 3, rotateY: -3 }}
         transition={{ type: "spring", stiffness: 300, damping: 18 }}
@@ -28,22 +53,10 @@ export default function LobbyScreen() {
               : "border-[#a5c7ae]/80 border-b-[#234f38] bg-[#173b2b]/90 text-[#d7e9dc] shadow-[0_0_18px_rgba(215,233,220,0.1)] active:border-[#d7e9dc] active:border-b-[#a5c7ae] active:text-white"
         }`}
       >
-        <motion.span
-          aria-hidden="true"
-          animate={disabled ? { opacity: 1 } : { opacity: [0.25, 1, 0.25], x: [0, 8, 0] }}
-          transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute left-5 top-1/2 -translate-y-1/2 font-['Press_Start_2P'] text-lg sm:text-xl ${
-            disabled ? "text-slate-400" : "text-[#d7e9dc]"
-          }`}
-        >
-          {disabled ? "×" : ">"}
-        </motion.span>
-        <span className="flex items-center justify-center gap-3 text-center">
-          <span>{label}</span>
-          {isMe && <span className="text-xl">✓</span>}
-        </span>
-        {disabled && <span className="text-xs leading-relaxed tracking-normal text-slate-400 sm:text-sm">(Zajety)</span>}
-      </motion.button>
+        {label}
+        {disabled && !isMe && " (Zajęty)"}
+        {isMe && " ✓"}
+      </GameButton>
     );
   };
 
