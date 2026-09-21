@@ -21,7 +21,7 @@ export function usePlayAgainModal() {
       closeButton: false,
       pauseOnHover: false,
       onClose: () => setIsOpen(false),
-      className: "!bg-white !rounded-2xl !p-0 !max-w-lg !w-96 shadow-2xl overflow-hidden mt-12",
+      className: "!bg-white !p-0 !max-w-2xl !w-[calc(100vw-2rem)] sm:!w-[min(42rem,calc(100vw-3rem))] shadow-2xl overflow-hidden mt-8 sm:mt-12",
     });
   }, []);
 

@@ -4,7 +4,7 @@ import { type LucideIcon } from "lucide-react";
 interface GameButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   icon?: LucideIcon;
-  variant?: "primary" | "secondary" | "danger";
+  variant?: "primary" | "secondary" | "danger" | "terminal";
   size?: "md" | "lg" | "zone";
 }
 
@@ -28,6 +28,8 @@ export default function GameButton({
       "bg-[var(--color-cream-100)] border-b-[5px] border-[var(--color-cream-300)] active:translate-y-[3px] active:border-b-[2px]",
     danger:
       "bg-[var(--color-danger-500)] text-white border-b-[7px] border-[var(--color-danger-700)] active:translate-y-[4px] active:border-b-[2px]",
+    terminal:
+      "min-h-16 rounded-none border-2 border-b-[7px] border-[#8eaf96] border-b-[#1e472d] bg-[#163d27] px-8 font-['Press_Start_2P'] text-sm !text-[#d7e9dc] shadow-[0_0_18px_rgba(142,175,150,0.12)] active:translate-y-1 active:border-b-2 active:border-[#d7e9dc] active:border-b-[#8eaf96] sm:min-h-20 sm:px-12 sm:text-base",
   };
 
   const sizeStyles = {

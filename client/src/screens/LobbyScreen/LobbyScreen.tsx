@@ -91,7 +91,7 @@ export default function LobbyScreen() {
             />
             <header className="absolute left-5 right-5 top-5 flex items-start justify-between font-['Press_Start_2P'] text-xs uppercase leading-relaxed tracking-normal text-[#d7e9dc] sm:left-12 sm:right-12 sm:top-8 sm:text-sm">
               <span>1UP</span>
-              <span className="text-center text-[#b9d4c0]/80">STADIUM VS</span>
+              <span className="text-center text-[#b9d4c0]/80">PENALTY SHOWDOWN</span>
               <span>2UP</span>
             </header>
 
