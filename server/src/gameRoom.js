@@ -80,6 +80,18 @@ export class GameRoom {
         if (this.state !== GAME_STATES.LOBBY) return;
         if (requestedRole !== 'player_1' && requestedRole !== 'player_2') return;
 
+        // Защита от захвата обеих ролей одним сокетом:
+        // Если у сокета уже есть роль и она отличается от запрошенной — отклоняем
+        if (socket.role && socket.role !== requestedRole) {
+            socket.emit('room:error', { code: 'ROLE_TAKEN', message: 'Masz już przypisaną rolę!' });
+            return;
+        }
+
+        // Если этот же сокет повторно жмет свою же роль — игнорируем повторный вызов
+        if (socket.role === requestedRole && this.players[requestedRole]?.socketId === socket.id) {
+            return;
+        }
+
         if (this.players[requestedRole] && (this.players[requestedRole].isConnected || this.players[requestedRole].sessionToken)) {
             socket.emit('room:error', { code: 'ROLE_TAKEN', message: 'Ta rola jest już zajęta!' });
             return;

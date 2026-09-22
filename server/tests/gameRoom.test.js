@@ -57,6 +57,26 @@ describe('2. Maszyna Stanów (gameRoom.js)', () => {
         assert.strictEqual(room.state, GAME_STATES.CUSTOMIZATION);
     });
 
+    it('Jeden socket nie może zająć obu ról ani zmienić roli po jej wybraniu', () => {
+        room.handleSelectRole(socket1, 'player_1');
+        assert.strictEqual(socket1.role, 'player_1');
+
+        // Ten sam socket próbuje zająć drugą rolę (player_2)
+        room.handleSelectRole(socket1, 'player_2');
+        assert.strictEqual(socket1.role, 'player_1');
+        assert.strictEqual(room.players.player_2, null);
+        assert.strictEqual(room.state, GAME_STATES.LOBBY);
+
+        const roleErr = socket1.emitted.find((e) => e.event === 'room:error');
+        assert.ok(roleErr);
+        assert.strictEqual(roleErr.data.code, 'ROLE_TAKEN');
+
+        // Powtórny klik w tę samą rolę przez ten sam socket nie powinien nic zepsuć ani zmienić tokenu
+        const currentToken = room.players.player_1.sessionToken;
+        room.handleSelectRole(socket1, 'player_1');
+        assert.strictEqual(room.players.player_1.sessionToken, currentToken);
+    });
+
     it('Bariera synchronizacji: runda nie kończy się dopóki obaj nie wybiorą', () => {
         room.handleSelectRole(socket1, 'player_1');
         room.handleSelectRole(socket2, 'player_2');
