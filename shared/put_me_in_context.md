@@ -2,7 +2,7 @@
 STADIUM VS (1 VS 1 PENALTY SHOOTOUT) — MASTER SKELETON KEY & FRONTEND BLUEPRINT
 Автономный Мастер-Ключ Архитектуры, Контракты WebSockets и Спецификация UI
 СТАТУС ДОКУМЕНТА: ВЕДУЩИЙ АРХИТЕКТУРНЫЙ КАРКАС И СПЕЦИФИКАЦИЯ ИНТЕГРАЦИИ
-ВЕРСИЯ ДОКУМЕНТА: v1.1.0 (Synced with server/src/gameRoom.js @ main, 2026-09-20)
+ВЕРСИЯ ДОКУМЕНТА: v1.2.0 (Synced with server/src/gameRoom.js @ main, 2026-09-22)
 ЛОКАЛИЗАЦИЯ: Польский язык (Język polski — терминология, статусы, интерфейс)
 ================================================================================
 
@@ -482,6 +482,25 @@ B. СЕРВЕР -> КЛИЕНТ (LISTEN)
    Клиентская тестовая панель (server/public/index.html) автоматически сохраняет
    sessionToken в localStorage и производит прозрачный реконнект при
    восстановлении связи.
+
+================================================================================
+10. ZAŚWIADCZENIE / OCHRONA PRZED PRZEJĘCIEM OBU RÓL PRZEZ JEDEN SOCKET (2026-09-22).
+
+    Było: handleSelectRole() w gameRoom.js sprawdzał jedynie czy dany slot
+    (this.players[requestedRole]) jest wolny, ignorując to, czy socket ma już
+    przypisaną inną rolę. Umożliwiało to jednemu klientowi wysłanie
+    player:select_role('player_1'), a następnie player:select_role('player_2'),
+    co natychmiast przerzucało pokój do CUSTOMIZATION bez udziału drugiego gracza.
+
+    Stało się:
+    - Serwer weryfikuje socket.role. Jeśli socket ma już przypisaną inną rolę
+      niż requestedRole, odrzuca żądanie z kodem błędu ROLE_TAKEN
+      ('Masz już przypisaną rolę!').
+    - Ponowne kliknięcie w swoją własną rolę przez ten sam socket jest
+      bezpiecznie ignorowane (wczesny return), bez zmiany tokenu sesji.
+    - Wszystkie zdarzenia meczu (character:submit, game:choose_zone,
+      game:restart) są autoryzowane po stronie serwera wyłącznie w oparciu
+      o powiązany socket.role, uniemożliwiając podszywanie się pod drugiego gracza.
 
 ================================================================================
 --- END OF FILE PROJECT_SKELETON_KEY.txt ---
