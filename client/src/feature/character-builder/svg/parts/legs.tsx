@@ -7,7 +7,19 @@ import { Highlight, Shadow, type PartFills, type PartProps } from "../shared";
 function LegsBase({ fills }: { fills: PartFills }) {
   return (
     <>
-      <rect x="70" y="200" width="60" height="30" rx="15" fill={fills.primary} stroke={fills.metal} strokeWidth="3" />
+      {/*
+        Пояс шорт начинается на y=176, а не на y=200: подол торса (см.
+        BodyBase в ../body.tsx) — скруглённый прямоугольник с нижним краем
+        ~178 по центру (и выше по краям из-за rx=22), а у варианта "Vest"
+        нашивной клапан доходит до 186. При y=200 между подолом и поясом
+        оставалась пустая полоса — на маленьком спрайте конструктора
+        незаметная, но на полноэкранной арене матча (CharacterSprite
+        size="lg"/"sm", разрешение киоска 1920×1080) читалась как разрыв
+        тела персонажа пополам. Пояс красится ПОД торсом (legs монтируется
+        первым в PlayerCharacter.tsx, торс поверх), так что нахлёст просто
+        скрывается за подолом, а не торчит поверх него.
+      */}
+      <rect x="70" y="176" width="60" height="54" rx="15" fill={fills.primary} stroke={fills.metal} strokeWidth="3" />
       <rect x="70" y="222" width="27" height="26" rx="10" fill={fills.primary} stroke={fills.metal} strokeWidth="3" />
       <rect x="103" y="222" width="27" height="26" rx="10" fill={fills.primary} stroke={fills.metal} strokeWidth="3" />
       <rect x="71" y="246" width="25" height="38" rx="10" fill={fills.accent} stroke={fills.metal} strokeWidth="2.5" />

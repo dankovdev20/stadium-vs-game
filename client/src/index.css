@@ -52,15 +52,23 @@
  * CSS-анимация, которую просто перезапускает React через смену `key`
  * (пересоздание DOM-узла), настолько же нативна, как .animate-podium-float
  * выше, и не имеет такого отказа.
+ *
+ * translate(-50%, -100%) — якорь по СТОПАМ (низ-центр), не по центру
+ * спрайта: персонажи на арене позиционируются по точке на газоне, где
+ * стоят ноги (см. KEEPER_SPOT/STRIKER_SPOT в model/zoneLayout), а не по
+ * геометрическому центру. CSS-анимация — это единственное объявление
+ * transform на узле (transform-классы Tailwind она полностью перекрывает
+ * на всё время действия анимации, включая заливку `forwards`), поэтому
+ * якорь ОБЯЗАН быть прописан именно здесь, а не отдельным классом.
  */
 @keyframes character-enter {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.85);
+    transform: translate(-50%, -100%) scale(0.85);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, -100%) scale(1);
   }
 }
 
@@ -68,20 +76,165 @@
   animation: character-enter 0.3s ease-out forwards;
 }
 
-@keyframes arrow-bob {
+/*
+ * Кольцо "это ты" под ногами персонажа (screens/GameScreen/ui/PenaltyScene,
+ * YouMarker) — сменило стрелку над головой: та жила прямо в зоне кнопок
+ * ударов и на кнопке зоны 2 перекрывалась вместе с головой вратаря. Кольцо
+ * живёт у стоп — там кнопок никогда не бывает, при любой раскладке зон.
+ * Бесконечная пульсация — CSS, не Framer, по той же причине, что и у
+ * .animate-podium-float выше (перерисовки родителя её не прерывают).
+ */
+@keyframes you-ring-pulse {
   0%,
   100% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    opacity: 0.85;
+    transform: scale(1);
   }
   50% {
     opacity: 1;
-    transform: translateX(-50%) translateY(-30%);
+    transform: scale(1.08);
   }
 }
 
-.animate-arrow-bob {
-  animation: arrow-bob 1.2s ease-in-out infinite;
+.animate-you-ring-pulse {
+  animation: you-ring-pulse 2s ease-in-out infinite;
+}
+
+/*
+ * Хореография развязки раунда (screens/GameScreen/ui/Ball.tsx,
+ * ImpactFX.tsx, model/reveal.ts) — все эффекты момента удара, CSS вместо
+ * Framer по той же причине, что и выше: элемент монтируется ЗАНОВО каждый
+ * раунд (key на result.round), CSS-анимация просто проигрывается с нуля
+ * при маунте, без риска залипания между раундами.
+ */
+@keyframes impact-ring {
+  from {
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.4);
+  }
+}
+
+/*
+ * fill-mode: both (не forwards) — ВСЕ анимации на этой странице, у
+ * которых animation-delay приходит из JS (синхронизация с моментом
+ * касания мяча, см. model/reveal.ts), обязаны держать кадр 0% ("from")
+ * весь период задержки. С одним только `forwards` браузер во время
+ * задержки рисует элемент в его ОБЫЧНОМ, нетрансформированном состоянии
+ * (opacity по умолчанию 1, transform отсутствует) — не в стартовом кадре
+ * анимации — и только в момент реального старта анимации резко
+ * "перепрыгивает" в кадр 0%. Так родился баг с баннером результата: он
+ * был виден и стоял НЕ по центру (left:50% без -translate-x-50%) всю
+ * задержку до касания мяча, а не по центру — и только в момент касания
+ * "телепортировался" в правильную (по центру) стартовую позицию и оттуда
+ * уже нормально анимировался. `both` = держит кадр 0% ДО старта и кадр
+ * 100% ПОСЛЕ конца — то же самое переключение, что раньше решали через
+ * `forwards`, но без дыры на время задержки.
+ */
+.animate-impact-ring {
+  animation: impact-ring 0.55s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes impact-flash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.3);
+  }
+}
+
+.animate-impact-flash {
+  animation: impact-flash 0.4s ease-out both;
+}
+
+@keyframes net-bulge {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+
+.animate-net-bulge {
+  animation: net-bulge 0.7s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+}
+
+@keyframes spark-fly {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateX(var(--spark-dist)) scale(0.3);
+  }
+}
+
+.animate-spark-fly {
+  animation: spark-fly 0.42s ease-out both;
+}
+
+@keyframes screen-shake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-10px, 6px);
+  }
+  40% {
+    transform: translate(9px, -5px);
+  }
+  60% {
+    transform: translate(-6px, -4px);
+  }
+  80% {
+    transform: translate(5px, 3px);
+  }
+}
+
+.animate-screen-shake {
+  animation: screen-shake 0.32s ease-in-out;
+}
+
+/*
+ * banner-drop въезжает СВЕРХУ — баннер результата живёт сверху-по-центру,
+ * HUD — в углу (см. ui/Hud.tsx), так что пересечься им негде.
+ */
+@keyframes banner-drop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -140%);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, 6%);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0%);
+  }
+}
+
+.animate-banner-drop {
+  animation: banner-drop 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
 }
 
 /*
