@@ -1,4 +1,5 @@
 import GameButton from "../../../components/ui/Button";
+import type { CharacterSelection } from "../../../game/types";
 import type { CharacterOption } from "../model/options";
 import PartPreview from "./PartPreview";
 
@@ -18,12 +19,13 @@ interface CategoryTabsProps {
   onChange: (category: BuilderCategory) => void;
   /** Что сейчас надето в каждой категории — вкладка показывает превью этой детали. */
   worn: Record<BuilderCategory, CharacterOption>;
+  outfit: CharacterSelection;
 }
 
 // Переключатель категорий гардероба. На вкладке не только слово, но и
 // превью уже надетой детали — ребёнок видит "что у меня сейчас", даже не
 // читая подпись.
-export default function CategoryTabs({ active, onChange, worn }: CategoryTabsProps) {
+export default function CategoryTabs({ active, onChange, worn, outfit }: CategoryTabsProps) {
   return (
     <div className="flex gap-6">
       {TABS.map((tab) => (
@@ -35,7 +37,7 @@ export default function CategoryTabs({ active, onChange, worn }: CategoryTabsPro
           onClick={() => onChange(tab.key)}
           className="h-[136px] flex-1 flex-col gap-0 px-2 pb-2.5 text-[28px]"
         >
-          <PartPreview part={tab.key} optionId={worn[tab.key].id} scale={TAB_SCALE} height={88} />
+          <PartPreview part={tab.key} optionId={worn[tab.key].id} outfit={outfit} scale={TAB_SCALE} height={88} />
           {tab.label}
         </GameButton>
       ))}

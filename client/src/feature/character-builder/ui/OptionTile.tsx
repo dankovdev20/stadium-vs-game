@@ -1,3 +1,4 @@
+import type { CharacterSelection } from "../../../game/types";
 import type { CharacterOption } from "../model/options";
 import type { BuilderCategory } from "./CategoryTabs";
 import PartPreview from "./PartPreview";
@@ -10,6 +11,7 @@ const TILE_SCALE = { head: 3, body: 4, legs: 5 };
 interface OptionTileProps {
   category: BuilderCategory;
   option: CharacterOption;
+  outfit: CharacterSelection;
   selected: boolean;
   disabled?: boolean;
   onSelect: () => void;
@@ -19,7 +21,7 @@ interface OptionTileProps {
 // короткая подпись. Надетый вариант — золотая рамка и метка "Założone"
 // ("надето", а не просто "выбрано"). После подтверждения персонажа
 // карточки блокируются, надетая остаётся в цвете.
-export default function OptionTile({ category, option, selected, disabled = false, onSelect }: OptionTileProps) {
+export default function OptionTile({ category, option, outfit, selected, disabled = false, onSelect }: OptionTileProps) {
   return (
     <GameButton
       size="md"
@@ -36,7 +38,7 @@ export default function OptionTile({ category, option, selected, disabled = fals
       aria-label={option.label}
       className="h-[236px] flex-col gap-1 px-3 pb-3.5 text-[30px]"
     >
-      <PartPreview part={category} optionId={option.id} scale={TILE_SCALE} height={128} />
+      <PartPreview part={category} optionId={option.id} outfit={outfit} scale={TILE_SCALE} height={128} />
       {option.label}
       {option.tagline && <span className="text-center text-[21px] font-medium leading-tight text-ink-500">{option.tagline}</span>}
     </GameButton>
