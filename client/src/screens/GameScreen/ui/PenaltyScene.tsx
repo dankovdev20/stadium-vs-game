@@ -1,16 +1,14 @@
 import { useEffect } from "react";
 import confetti from "canvas-confetti";
 import type { CharacterSelection, RoundResolvedPayload } from "../../../game/types";
-import CharacterSprite from "../../../feature/character-builder/ui/CharacterSprite";
 import GameButton from "../../../components/ui/Button";
-import Tag from "../../../components/ui/Tag";
 import { stagePointToViewport } from "../../../components/layout/kioskScale";
 import gameScreenArt from "../../../assets/gameScreen.jpg";
 import { ZONES, KEEPER_SPOT, STRIKER_SPOT, zoneButtonPosition, type ZoneId } from "../model/zoneLayout";
 import { buildBallChoreography, buildKeeperPose } from "../model/reveal";
 import Ball from "./Ball";
 import ImpactFX from "./ImpactFX";
-import PoseLayer from "./PoseLayer";
+import { KeeperFigure, StrikerFigure } from "./SceneCharacters";
 
 const CONFETTI_COLORS = ["#0f8a45", "#ffffff", "#d7282f", "#ffc93c"];
 
@@ -25,55 +23,6 @@ export interface PenaltySceneProps {
   onSelectZone: (zone: ZoneId) => void;
 }
 
-// Кольцо-маркер "это ты" под ногами персонажа — пришло на смену стрелке
-// над головой. Стрелка сидела в той же полосе высоты, что и кнопки зон
-// удара, и на зоне 2 перекрывалась одновременно с головой вратаря (см.
-// историю разработки) — а кольцо у стоп физически не может столкнуться ни
-// с одной кнопкой зоны при любой раскладке, потому что кнопки живут у
-// головы/торса, а не у земли.
-//
-// Геометрия кольца НЕ своя — это геометрия GroundShadow (тот же h-[14%],
-// тот же bottom:0, та же ширина в процентах от персонажа), только шире на
-// ~25%. Раньше кольцо считало собственные пропорции/позицию с нуля и в
-// двух заходах подряд промахивалось (то поверх головы, то "блином", то
-// висело на щиколотках) — а тень под ногами уже была той формой, которая
-// нужна, её просто было не видно рядом с кольцом-переростком. Проще и
-// надёжнее в буквальном смысле наложить кольцо НА тень, унаследовав её
-// форму, чем изобретать отдельный эллипс.
-//
-// Подпись — та же золотая пиксельная метка (Tag), что "TY" на табло и
-// выбранные элементы по всей игре: золото = "это ты".
-// Пульсация — чистый CSS (.animate-you-ring-pulse, см. index.css), не
-// Framer Motion — та же причина, что и у .animate-podium-float там же:
-// перерисовки родителя её не прерывают.
-function YouMarker({ shadowWidth }: { shadowWidth: string }) {
-  return (
-    <>
-      <div
-        className="animate-you-ring-pulse absolute bottom-0 left-1/2 h-[14%] min-h-4 -translate-x-1/2 rounded-[50%] border-[0.55cqh] border-gold-500 shadow-[0_0_0_3px_var(--color-ink)]"
-        style={{ width: `calc(${shadowWidth} * 1.25)` }}
-        aria-hidden="true"
-      />
-      <Tag tone="gold" size="sm" className="absolute bottom-[-78px] left-1/2 -translate-x-1/2 text-[24px] uppercase" aria-hidden="true">
-        To ty
-      </Tag>
-    </>
-  );
-}
-
-// Тень-контакт под ногами персонажа — дешёвый, но важный сигнал "стоит на
-// траве", а не "наклеен на картинку". Без неё вратарь на линии ворот и
-// раньше визуально сливался с сеткой за спиной.
-function GroundShadow({ width }: { width: string }) {
-  return (
-    <div
-      className="absolute bottom-0 left-1/2 h-[14%] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(4,8,4,0.45)_0%,rgba(4,8,4,0)_72%)]"
-      style={{ width }}
-      aria-hidden="true"
-    />
-  );
-}
-
 // Единая сцена: одна и та же камера для обоих игроков, арена — арт от
 // Даниила (assets/gameScreen.jpg, ворота анфас). Сцена — это ВЕСЬ киоск
 // (см. GameScreen: PenaltyScene абсолютным слоем на весь вьюпорт, без
@@ -84,10 +33,10 @@ function GroundShadow({ width }: { width: string }) {
 // пересоздаёт узел — см. .animate-character-enter в index.css), а не
 // переключается вся камера.
 //
-// [container-type:size] на арене — ключевая деталь: рост персонажей
-// (CharacterSprite), стрелочка и зоны удара завязаны на cqh/cqw контейнера,
-// а не на vh/px экрана. Это единственный способ не потерять пропорции
-// "персонаж vs ворота" при другом разрешении киоска.
+// [container-type:size] на арене: зоны удара и эффекты завязаны на cqh/cqw
+// контейнера. Персонажи — пиксельные спрайты целого масштаба (см.
+// SceneCharacters): сцена всегда 1920×1080 (components/layout/KioskStage),
+// поэтому их px-размер и есть доля сцены.
 //
 // Якорь персонажей — СТОПЫ (translate(-50%, -100%)), не верхний левый угол:
 // KEEPER_SPOT/STRIKER_SPOT (см. model/zoneLayout) задают именно точку на
@@ -149,11 +98,7 @@ export default function PenaltyScene({ strikerCharacter, keeperCharacter, isStri
           className="animate-character-enter absolute z-[2]"
           style={{ left: `${KEEPER_SPOT.x}%`, top: `${KEEPER_SPOT.y}%` }}
         >
-          <GroundShadow width="70%" />
-          {!isStriker && <YouMarker shadowWidth="70%" />}
-          <PoseLayer pose={keeperPose}>
-            <CharacterSprite character={keeperCharacter} size="sm" />
-          </PoseLayer>
+          <KeeperFigure character={keeperCharacter} isMe={!isStriker} result={result} pose={keeperPose} />
         </div>
 
         {/* Мяч */}
@@ -168,9 +113,7 @@ export default function PenaltyScene({ strikerCharacter, keeperCharacter, isStri
           className="animate-character-enter absolute z-[3]"
           style={{ left: `${STRIKER_SPOT.x}%`, top: `${STRIKER_SPOT.y}%` }}
         >
-          <GroundShadow width="60%" />
-          {isStriker && <YouMarker shadowWidth="60%" />}
-          <CharacterSprite character={strikerCharacter} size="lg" />
+          <StrikerFigure character={strikerCharacter} isMe={isStriker} result={result} />
         </div>
       </div>
 

@@ -1,8 +1,11 @@
 import type { CharacterOption } from "../model/options";
 import type { BuilderCategory } from "./CategoryTabs";
-import PartTilePreview from "../svg/PartTilePreview";
+import PartPreview from "./PartPreview";
 import GameButton from "../../../components/ui/Button";
 import Tag from "../../../components/ui/Tag";
+
+// Целые масштабы превью в карточке (голова выше, ноги ниже и шире).
+const TILE_SCALE = { head: 3, body: 4, legs: 5 };
 
 interface OptionTileProps {
   category: BuilderCategory;
@@ -33,7 +36,7 @@ export default function OptionTile({ category, option, selected, disabled = fals
       aria-label={option.label}
       className="h-[236px] flex-col gap-1 px-3 pb-3.5 text-[30px]"
     >
-      <PartTilePreview category={category} option={option} className="h-[128px] w-[128px]" />
+      <PartPreview part={category} optionId={option.id} scale={TILE_SCALE} height={128} />
       {option.label}
       {option.tagline && <span className="text-center text-[21px] font-medium leading-tight text-ink-500">{option.tagline}</span>}
     </GameButton>

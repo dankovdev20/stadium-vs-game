@@ -25,6 +25,10 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CLIENT = path.resolve(HERE, "../..");
 const CACHE = path.join(HERE, ".cache");
 const OUT = path.join(CLIENT, "src/assets/characters");
+// Собираем во временную папку и подменяем готовую одним rename: если стереть
+// OUT заранее, запущенный `npm run dev` на время сборки теряет manifest.json
+// и сыплет ошибками импорта.
+const BUILD = `${OUT}.building`;
 const FRAME = 64;
 const BASE_Z = 10;
 const PART_ORDER = ["legs", "body", "head"];
@@ -147,6 +151,26 @@ async function composeAnim(resolvedItems, anim) {
   return { front, back: hasBack ? back : null, width, height };
 }
 
+/**
+ * Высокие шапки (корона и т.п.) в листах LPC выше кадра 64×64: их верхушка
+ * из ряда N "вылезает" в нижние строки ряда N-1 — и, например, в виде со
+ * спины (ряд "up") у ног появлялась чужая точка от короны ряда "left".
+ * В многорядных анимациях своё содержимое головы не опускается ниже 47-й
+ * строки кадра, а чужие пиксели лежат на 62–63 (замерено по всем вариантам),
+ * поэтому в слоях головы стираем строки от HEAD_MAX_Y — во всех рядах, КРОМЕ
+ * последнего (под ним нет ряда, из которого что-то могло вылезти). В
+ * одно-рядных анимациях (hurt — падение) голова законно опускается до 55-й
+ * строки, их не трогаем. Ноги так чистить нельзя: при беге стопы доходят до 63-й.
+ */
+const HEAD_MAX_Y = 56;
+function clearBelow(png, maxY) {
+  const lastRowStart = png.height - FRAME;
+  for (let y = 0; y < lastRowStart; y++) {
+    if (y % FRAME < maxY) continue;
+    png.data.fill(0, y * png.width * 4, (y + 1) * png.width * 4);
+  }
+}
+
 // ---------- авторы ----------
 
 const credits = new Map();
@@ -186,7 +210,7 @@ const manifest = {
   parts: {},
 };
 
-await fs.rm(OUT, { recursive: true, force: true });
+await fs.rm(BUILD, { recursive: true, force: true });
 
 const base = await Promise.all(config.base.map(resolveItem));
 collectCredits(base);
@@ -195,7 +219,7 @@ for (const anim of config.animations) {
   const { front, width, height } = await composeAnim(base, anim);
   manifest.animations[anim] = { frames: width / FRAME, rows: height / FRAME };
   composed.base[anim] = front;
-  await writePng(path.join(OUT, "base", `${anim}.png`), front);
+  await writePng(path.join(BUILD, "base", `${anim}.png`), front);
 }
 console.log(`base: ${config.animations.length} анимаций`);
 
@@ -209,14 +233,18 @@ for (const part of PART_ORDER) {
     composed[part][option.id] = {};
     for (const anim of config.animations) {
       const { front, back, width, height } = await composeAnim(resolved, anim);
+      if (part === "head") {
+        clearBelow(front, HEAD_MAX_Y);
+        if (back) clearBelow(back, HEAD_MAX_Y);
+      }
       const expected = manifest.animations[anim];
       if (width / FRAME !== expected.frames || height / FRAME !== expected.rows) {
         throw new Error(`${part} #${option.id} ${anim}: сетка ${width}×${height} не совпадает с базой`);
       }
-      await writePng(path.join(OUT, part, String(option.id), `${anim}.png`), front);
+      await writePng(path.join(BUILD, part, String(option.id), `${anim}.png`), front);
       if (back) {
         hasBack = true;
-        await writePng(path.join(OUT, part, String(option.id), `${anim}.back.png`), back);
+        await writePng(path.join(BUILD, part, String(option.id), `${anim}.back.png`), back);
       }
       composed[part][option.id][anim] = { front, back };
     }
@@ -225,8 +253,14 @@ for (const part of PART_ORDER) {
   }
 }
 
-await fs.writeFile(path.join(OUT, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
-await fs.writeFile(path.join(OUT, "credits.json"), JSON.stringify([...credits.values()], null, 2) + "\n");
+await fs.writeFile(path.join(BUILD, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+await fs.writeFile(path.join(BUILD, "credits.json"), JSON.stringify([...credits.values()], null, 2) + "\n");
+
+const OLD = `${OUT}.old`;
+await fs.rm(OLD, { recursive: true, force: true });
+await fs.rename(OUT, OLD).catch(() => {}); // первой сборки может не быть
+await fs.rename(BUILD, OUT);
+await fs.rm(OLD, { recursive: true, force: true });
 console.log(`Готово: ${OUT} (${credits.size} записей об авторах)`);
 
 // ---------- превью (не в проект) ----------
