@@ -23,7 +23,7 @@ export default function PodiumStage({ character }: PodiumStageProps) {
       />
       <div
         className="absolute inset-0"
-        style={{ background: "radial-gradient(ellipse 60% 55% at 50% 34%, rgba(255,201,60,0.18) 0%, rgba(0,0,0,0) 72%)" }}
+        style={{ background: "radial-gradient(ellipse 60% 55% at 50% 34%, rgba(215,233,220,0.16) 0%, rgba(0,0,0,0) 72%)" }}
         aria-hidden="true"
       />
 

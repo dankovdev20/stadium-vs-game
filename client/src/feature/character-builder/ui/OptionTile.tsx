@@ -2,7 +2,6 @@ import { motion } from "motion/react";
 import type { CharacterOption } from "../model/options";
 import type { BuilderCategory } from "./CategoryTabs";
 import PartTilePreview from "../svg/PartTilePreview";
-import Badge from "../../../components/ui/Badge";
 
 interface OptionTileProps {
   category: BuilderCategory;
@@ -11,11 +10,13 @@ interface OptionTileProps {
   onSelect: () => void;
 }
 
-// Крупная карточка-превью варианта (взамен старого 80x80 OptionCard):
-// показывает саму часть силуэта, а не иконку-плейсхолдер. Тап даёт
-// пружинистый отклик (та же bounce-bezier, что у GameButton), выбранный
-// вариант помечен плашкой "Założone" — читается как "надето", а не просто
-// "выбрано".
+// Крупная карточка-превью варианта: показывает саму часть силуэта, а не
+// иконку-плейсхолдер. Тап даёт пружинистый отклик (та же bounce-bezier,
+// что у GameButton), выбранный вариант помечен плашкой "Założone".
+//
+// Терминальная палитра/шрифт вместо rounded-2xl gold — плашка "Założone"
+// теперь пиксельный бейдж на месте прежнего Badge, чтобы не тянуть
+// gold-стилистику отдельного компонента.
 export default function OptionTile({ category, option, selected, onSelect }: OptionTileProps) {
   return (
     <motion.button
@@ -26,22 +27,24 @@ export default function OptionTile({ category, option, selected, onSelect }: Opt
       whileTap={{ y: 4, filter: "brightness(1.15)" }}
       animate={{ scale: selected ? [1, 1.05, 1] : 1 }}
       transition={{ duration: 0.25, ease: [0.2, 1.5, 0.4, 1] }}
-      className={`relative flex flex-col items-center justify-center gap-1.5 rounded-2xl border-b-[5px] px-3 py-4 transition-colors duration-100 active:border-b-[2px] ${
+      className={`relative flex flex-col items-center justify-center gap-1.5 border-2 border-b-4 px-3 py-4 transition-all duration-100 active:translate-y-1 active:border-b-2 ${
         selected
-          ? "border-[var(--color-gold-700)] bg-white/15 ring-4 ring-[var(--color-gold-500)]"
-          : "border-black/30 bg-white/5"
+          ? "border-[#d7e9dc] border-b-[#a5c7ae] bg-[#173b2b] shadow-[0_0_16px_rgba(215,233,220,0.25)]"
+          : "border-[#587a63]/70 border-b-[#2c4a36] bg-[#0b2418]"
       }`}
     >
       {selected && (
-        <Badge tone="gold" className="absolute -top-3 right-2 px-2 py-0.5 text-[10px] shadow">
+        <span className="absolute -top-3 right-2 border-2 border-[#d7e9dc] bg-[#173b2b] px-2 py-0.5 font-['Press_Start_2P'] text-[8px] uppercase leading-relaxed tracking-normal text-[#d7e9dc] shadow-[2px_2px_0_rgba(0,0,0,0.4)]">
           Założone
-        </Badge>
+        </span>
       )}
-      <div className="h-28 w-28">
+      <div className="h-24 w-24">
         <PartTilePreview category={category} option={option} className="h-full w-full" />
       </div>
-      <p className="font-[Poppins] text-base font-bold text-white">{option.label}</p>
-      {option.tagline && <p className="font-[Poppins] text-xs leading-tight text-white/60">{option.tagline}</p>}
+      <p className="font-['Press_Start_2P'] text-[10px] uppercase leading-relaxed tracking-normal text-[#d7e9dc] sm:text-xs">{option.label}</p>
+      {option.tagline && (
+        <p className="font-['Press_Start_2P'] text-[8px] uppercase leading-relaxed tracking-normal text-[#8eaf96]">{option.tagline}</p>
+      )}
     </motion.button>
   );
 }
