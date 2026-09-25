@@ -2,52 +2,83 @@ interface PedestalProps {
   className?: string;
 }
 
-// Подставка-подиум под манекеном в примерочной — рендерится один раз на
-// экран (в отличие от RobotCharacter), поэтому фиксированные id внутри
-// <defs> безопасны, дублировать инстанс некому. Цилиндрический барабан +
-// верхняя плита с золотым ободом и заклёпками — перекликается с "механи-
-// ческим" почерком самого робота (те же заклёпки, что на голове/корпусе).
+// Подиум в раздевалке — пиксельный круг газона с точкой пенальти (раньше —
+// металлический барабан, оставшийся от робота). Рисуется из сетки
+// "пикселей" (как PixelIcon): эллипс верхней грани + боковина толщиной
+// DEPTH, контур чернилами там, где у клетки есть пустой сосед. Сетка
+// считается один раз при загрузке модуля.
+const W = 92;
+const A = 45.5; // полуось X
+const B = 11.5; // полуось Y
+const DEPTH = 6; // толщина боковины в клетках
+const CX = W / 2; // ровно по центру сетки — иначе эллипс несимметричен на полклетки
+const CY = 12;
+const H = Math.floor(CY + B + DEPTH + 2);
+const CELL = 6;
+
+const COLORS = {
+  o: "var(--color-ink)",
+  g: "#8ccb72", // газон
+  G: "#9bd483", // полоса покоса
+  r: "#c3ebad", // блик по верхнему краю
+  s: "#62a457", // боковина
+  S: "#4e8c4e", // боковина в тени
+  w: "#ffffff", // точка пенальти
+} as const;
+
+const inTop = (x: number, y: number) => ((x + 0.5 - CX) / A) ** 2 + ((y + 0.5 - CY) / B) ** 2 <= 1;
+const inBody = (x: number, y: number) =>
+  inTop(x, y) ||
+  ((x + 0.5 - CX) / A) ** 2 + ((y + 0.5 - CY - DEPTH) / B) ** 2 <= 1 ||
+  (Math.abs(x + 0.5 - CX) <= A && y + 0.5 >= CY && y + 0.5 <= CY + DEPTH);
+
+function cellColor(x: number, y: number): keyof typeof COLORS | null {
+  if (!inBody(x, y)) return null;
+  const onEdge = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ].some(([dx, dy]) => !inBody(x + dx, y + dy));
+  if (onEdge) return "o";
+  if (!inTop(x, y)) return y < CY + DEPTH + B - 3 ? "s" : "S";
+  if (((x + 0.5 - CX) / 4.2) ** 2 + ((y + 0.5 - CY) / 1.3) ** 2 <= 1) return "w";
+  if (!inTop(x, y - 1)) return "r";
+  return Math.floor(x / 8) % 2 === 0 ? "g" : "G";
+}
+
+const RUNS: { x: number; y: number; w: number; fill: string }[] = [];
+for (let y = 0; y < H; y++) {
+  let x = 0;
+  while (x < W) {
+    const c = cellColor(x, y);
+    if (!c) {
+      x++;
+      continue;
+    }
+    let end = x;
+    while (end < W && cellColor(end, y) === c) end++;
+    RUNS.push({ x, y, w: end - x, fill: COLORS[c] });
+    x = end;
+  }
+}
+
+export const PEDESTAL_WIDTH = W * CELL;
+export const PEDESTAL_HEIGHT = H * CELL;
+
 export default function Pedestal({ className = "" }: PedestalProps) {
   return (
-    <svg viewBox="0 0 260 76" className={className} aria-hidden="true">
-      <defs>
-        <radialGradient id="pedestal-glow" cx="50%" cy="35%" r="60%">
-          <stop offset="0%" stopColor="rgba(255,201,60,0.32)" />
-          <stop offset="100%" stopColor="rgba(255,201,60,0)" />
-        </radialGradient>
-        <linearGradient id="pedestal-drum" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#4a5568" />
-          <stop offset="55%" stopColor="#262c34" />
-          <stop offset="100%" stopColor="#111418" />
-        </linearGradient>
-        <linearGradient id="pedestal-top" x1="20%" y1="0%" x2="80%" y2="100%">
-          <stop offset="0%" stopColor="#606d7d" />
-          <stop offset="100%" stopColor="#262c34" />
-        </linearGradient>
-        <linearGradient id="pedestal-rim" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="var(--color-gold-700)" />
-          <stop offset="50%" stopColor="var(--color-gold-500)" />
-          <stop offset="100%" stopColor="var(--color-gold-700)" />
-        </linearGradient>
-      </defs>
-
-      <ellipse cx="130" cy="70" rx="122" ry="10" fill="#000000" opacity="0.38" />
-      <ellipse cx="130" cy="18" rx="128" ry="36" fill="url(#pedestal-glow)" />
-
-      {/* цилиндр-барабан */}
-      <path d="M 20 32 L 20 50 A 110 18 0 0 0 240 50 L 240 32 Z" fill="url(#pedestal-drum)" />
-      <path d="M 20 32 A 110 18 0 0 0 240 32 L 240 34 A 110 18 0 0 1 20 34 Z" fill="#000000" opacity="0.28" />
-
-      {/* верхняя плита */}
-      <ellipse cx="130" cy="32" rx="110" ry="18" fill="url(#pedestal-top)" stroke="#0b0e12" strokeWidth="2" />
-      <ellipse cx="130" cy="32" rx="110" ry="18" fill="none" stroke="url(#pedestal-rim)" strokeWidth="3" opacity="0.85" />
-      <ellipse cx="130" cy="27" rx="86" ry="10" fill="#ffffff" opacity="0.1" />
-
-      {/* заклёпки по ободу — тот же приём, что на голове/корпусе робота */}
-      <circle cx="46" cy="40" r="2.6" fill="#0b0e12" opacity="0.7" />
-      <circle cx="90" cy="47" r="2.6" fill="#0b0e12" opacity="0.7" />
-      <circle cx="170" cy="47" r="2.6" fill="#0b0e12" opacity="0.7" />
-      <circle cx="214" cy="40" r="2.6" fill="#0b0e12" opacity="0.7" />
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      width={PEDESTAL_WIDTH}
+      height={PEDESTAL_HEIGHT}
+      shapeRendering="crispEdges"
+      className={className}
+      aria-hidden="true"
+    >
+      {RUNS.map((r, i) => (
+        <rect key={i} x={r.x} y={r.y} width={r.w} height={1} fill={r.fill} />
+      ))}
     </svg>
   );
 }

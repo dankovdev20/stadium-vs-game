@@ -6,32 +6,29 @@ interface PodiumStageProps {
   character: CharacterSelection;
 }
 
-// "Примерочная": манекен не висит в пустой рамке, а стоит на подиуме —
-// прожектор-подсветка сверху, вертикальные полосы фона (шкафчики
-// раздевалки) и сам подиум под ногами. Занимает всю высоту родителя, чтобы
-// не оставалось пустого места на 1920×1080.
+// Левая половина раздевалки — персонаж как герой экрана: мягкий
+// светлый ореол, травяной подиум и сам персонаж (якорь по стопам, как на
+// арене матча — см. GameScreen/model/zoneLayout). Координаты — в px сцены
+// 1920×1080 (см. components/layout/KioskStage).
+const FEET = { x: 520, y: 896 };
+const HEIGHT = 650;
+
 export default function PodiumStage({ character }: PodiumStageProps) {
   return (
-    <div className="relative flex h-full w-full flex-col items-center justify-end overflow-hidden">
+    <>
       <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 2px, transparent 2px, transparent 64px)",
-        }}
         aria-hidden="true"
+        className="absolute left-[150px] top-[190px] h-[740px] w-[740px] bg-[radial-gradient(circle,rgb(255_255_255/0.9)_0%,rgb(255_255_255/0)_68%)]"
       />
+      <Pedestal className="absolute left-[244px] top-[806px] drop-shadow-[0_14px_0_rgb(42_46_82/0.18)]" />
       <div
-        className="absolute inset-0"
-        style={{ background: "radial-gradient(ellipse 60% 55% at 50% 34%, rgba(255,201,60,0.18) 0%, rgba(0,0,0,0) 72%)" }}
-        aria-hidden="true"
-      />
-
-      <div className="animate-podium-float relative z-[1] h-[72%]">
-        <CharacterSprite character={character} size="xl" />
+        className="absolute -translate-x-1/2 -translate-y-full"
+        style={{ left: FEET.x, top: FEET.y, height: HEIGHT, aspectRatio: "200 / 322" }}
+      >
+        <div className="animate-podium-float h-full">
+          <CharacterSprite character={character} size="xl" />
+        </div>
       </div>
-
-      <Pedestal className="relative z-0 -mt-[2%] w-[80%] max-w-[440px]" />
-    </div>
+    </>
   );
 }

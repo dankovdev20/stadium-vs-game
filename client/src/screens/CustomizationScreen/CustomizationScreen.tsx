@@ -1,9 +1,12 @@
 import { useState } from "react";
 import ScreenShell from "../../components/layout/ScreenShell";
-import Panel from "../../components/ui/Panel";
+import PixelIcon from "../../components/ui/PixelIcon";
+import Tag from "../../components/ui/Tag";
 import { useGameEmit, useGameState } from "../../game/GameContext";
 import CharacterBuilder from "../../feature/character-builder/ui/CharacterBuilder";
-import type { CharacterSelection } from "../../game/types";
+import type { CharacterSelection, PlayerRole } from "../../game/types";
+
+const ROLE_LABELS: Record<PlayerRole, string> = { player_1: "Gracz 1", player_2: "Gracz 2" };
 
 export default function CustomizationScreen() {
   const emit = useGameEmit();
@@ -13,24 +16,44 @@ export default function CustomizationScreen() {
   // персонажа — тогда кнопка должна остаться в "ожидании", а не звать жать снова.
   const confirmedOnServer = !!(myRole && sync?.characters[myRole]);
 
+  // Статус соперника — только чтение state:sync (персонаж соперника
+  // появляется там, как только сервер его принял): ребёнок видит, что
+  // происходит у второго терминала, а не ждёт в пустоту.
+  const rivalRole: PlayerRole | null = myRole ? (myRole === "player_1" ? "player_2" : "player_1") : null;
+  const rivalReady = !!(rivalRole && sync?.characters[rivalRole]);
+
   const handleSubmit = (character: CharacterSelection) => {
     setSubmitted(true);
     emit("character:submit", character);
   };
 
   return (
-    <ScreenShell tone="light">
-      <div className="flex h-full w-full flex-col gap-4 px-6 py-4">
-        <Panel className="self-center px-8 py-2">
-          <h1 className="text-center font-[Anton] text-xl uppercase tracking-wide text-white drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] sm:text-2xl">
-            Krok 1: Zbuduj swojego zawodnika
-          </h1>
-        </Panel>
+    <ScreenShell>
+      <header className="absolute inset-x-12 top-10 grid h-[100px] grid-cols-[1fr_auto_1fr] items-center">
+        {myRole ? (
+          <Tag tone="gold" className="justify-self-start px-[22px] pb-4 pt-3.5 text-[32px] uppercase">
+            {ROLE_LABELS[myRole]}
+          </Tag>
+        ) : (
+          <span />
+        )}
+        <h1 className="text-outline font-display text-[104px] font-normal uppercase leading-none">Zbuduj zawodnika</h1>
+        {rivalRole ? (
+          rivalReady ? (
+            <Tag tone="grass" className="justify-self-end text-[28px]">
+              <PixelIcon name="check" scale={4} /> {ROLE_LABELS[rivalRole]} gotowy
+            </Tag>
+          ) : (
+            <Tag tone="dashed" className="justify-self-end text-[28px]">
+              {ROLE_LABELS[rivalRole]} wybiera<span className="animate-px-blink">…</span>
+            </Tag>
+          )
+        ) : (
+          <span />
+        )}
+      </header>
 
-        <div className="min-h-0 flex-1">
-          <CharacterBuilder onSubmit={handleSubmit} disabled={submitted || confirmedOnServer} />
-        </div>
-      </div>
+      <CharacterBuilder onSubmit={handleSubmit} disabled={submitted || confirmedOnServer} />
     </ScreenShell>
   );
 }

@@ -1,50 +1,88 @@
 /*
- * Дизайн-токены Stadium VS — тема "стадион", киоск на сенсорных экранах.
- * Единственное место, где живут именованные цвета/размеры проекта — если
- * меняем оттенок травы или минимальный тап-таргет, трогаем только этот файл.
+ * Дизайн-токены Stadium VS — направление "Пастельный стадион".
+ * Единственное место, где живут именованные цвета/шрифты проекта.
  *
- * Целевая аудитория — дети 9+ и взрослые на планшетах: без hover, крупные
- * 3D-кнопки (тень + active:translate-y), тап-таргеты не меньше --size-tap-min.
+ * Это Tailwind v4 `@theme`: каждая переменная --color-X сразу становится
+ * классами bg-X / text-X / border-X, а --font-X — классом font-X. Поэтому в
+ * разметке пишем `bg-paper text-ink font-display`, а не `bg-[var(--...)]`
+ * и тем более не hex-литералы.
+ *
+ * Мир снят пипеткой с арта матча (assets/gameScreen.jpg): небо, облака,
+ * сиреневые трибуны, трава. Вместо чёрного — "чернила" (--color-ink): в
+ * арте художник ни разу не использовал чистый чёрный, контуры тёмно-синие.
+ * Функциональные цвета: золото — главное действие, коралл — napastnik,
+ * лазурь — bramkarz. Цвета WKS — только полоса-"шарф" (ScarfStripe).
+ *
+ * Целевая аудитория — дети 9+ у стенда: текст не меньше 22px, главная
+ * кнопка от 96px в высоту (см. components/ui/Button.tsx).
  */
-:root {
-  /* Трава — фон большинства экранов */
-  --color-grass-700: #173b2b;
-  --color-grass-500: #356b4c;
-  --color-grass-300: #6f9f7f;
+@theme {
+  /* Чернила — контуры и текст */
+  --color-ink: #2a2e52;
+  --color-ink-700: #464b7a;
+  --color-ink-500: #6e7299;
 
-  /* Небо — баннер роли "Bramkarz", вторичные акценты */
-  --color-sky-500: #2d7dd2;
-  --color-sky-700: #1c5a9c;
+  /* Бумага — панели, карточки, вторичные кнопки (облака с арта) */
+  --color-paper: #f7fbf3;
+  --color-paper-2: #e9f1e3;
+  --color-paper-shade: #d6e4ce;
 
-  /* Золото — основная кнопка (уже было в Button.tsx) */
+  /* Небо и трибуны */
+  --color-sky-100: #e6f2fb;
+  --color-sky-300: #a1c9ed;
+  --color-lilac-100: #eee9f7;
+  --color-lilac-200: #e2d8f1;
+  --color-lilac-400: #a9a4d6;
+
+  /* Неактивное (занято / заблокировано) — сиреневый, не полупрозрачность */
+  --color-mute-300: #ece8f5;
+  --color-mute-400: #dcd7ea;
+  --color-mute-500: #c6c0da;
+
+  /* Трава — "готово", гол, успех */
+  --color-grass-300: #b8e3a0;
+  --color-grass-500: #8ccb72;
+  --color-grass-600: #62a457;
+  --color-grass-800: #3e7a48;
+
+  /* Золото — главное действие, выбранное, "это ты" */
+  --color-gold-300: #ffe69a;
   --color-gold-500: #ffc93c;
-  --color-gold-700: #c97f00;
+  --color-gold-700: #e0a124;
 
-  /* Крем — вторичная кнопка, карточки, панели */
-  --color-cream-100: #f1efe7;
-  --color-cream-300: #c9c4b4;
+  /* Коралл — роль Napastnik (пастельный красный WKS) */
+  --color-coral-300: #ffa89f;
+  --color-coral-500: #f2716b;
+  --color-coral-700: #cf5158;
+  --color-coral-900: #9e3440;
 
-  /* Опасность/ошибка — обрыв связи, сброс */
-  --color-danger-500: #e5484d;
-  --color-danger-700: #b23020;
-
-  /* Текст на светлых поверхностях */
-  --color-ink-900: #14251d;
+  /* Лазурь — роль Bramkarz */
+  --color-azure-300: #9fd0f7;
+  --color-azure-500: #5da9e9;
+  --color-azure-700: #3e86c8;
+  --color-azure-900: #245c93;
 
   /*
-   * Табло — сэмплировано с самого арта матча (client/src/assets/gameScreen.jpg,
-   * нарисованное табло над трибунами, см. screens/GameScreen/ui/Hud.tsx):
-   * корпус светло-сиреневый, экран грифельно-синий (НЕ чёрный — в оригинале
-   * художник ни разу не use чистый чёрный), сегменты счёта — мятно-зелёные.
-   * HUD и баннер результата используют эту палитру вместо терминально-чёрной
-   * (той, что в PlayAgainModal) — та отдельный стиль для экрана конца матча,
-   * а HUD/баннер живут поверх сцены весь раунд и обязаны быть частью её мира.
+   * Табло — сэмплировано с нарисованного табло над трибунами: корпус
+   * светло-сиреневый, экран грифельно-синий, сегменты мятные. Тот же
+   * "физический объект" используют HUD, баннер результата и отсчёты.
    */
-  --color-scoreboard-frame: #a7b6da;
-  --color-scoreboard-screen: #303c58;
-  --color-scoreboard-screen-light: #47547a;
-  --color-scoreboard-led: #7fd6a3;
+  --color-board-frame: #a7b6da;
+  --color-board-frame-hi: #c9d4ee;
+  --color-board-frame-shade: #8795bd;
+  --color-board-screen: #303c58;
+  --color-board-screen-2: #47547a;
+  --color-board-edge: #252e45;
+  --color-board-text: #c9d3ec;
+  --color-board-text-dim: #aeb8d6;
+  --color-led: #7fd6a3;
+  --color-led-dim: #3e5a63;
 
-  /* Минимальный тап-таргет для детей на сенсорном экране (см. put_me_in_context.md, раздел 1) */
-  --size-tap-min: 64px;
+  /* Бренд WKS Śląsk — только шарф/конфетти, не заливки */
+  --color-wks-green: #0f8a45;
+  --color-wks-red: #d7282f;
+
+  /* Jersey 10 — дисплей (счёт, GOL!, заголовки); Pixelify Sans — интерфейс */
+  --font-display: "Jersey 10", "Pixelify Sans", system-ui, sans-serif;
+  --font-ui: "Pixelify Sans", system-ui, sans-serif;
 }

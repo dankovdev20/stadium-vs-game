@@ -3,12 +3,16 @@ import confetti from "canvas-confetti";
 import type { CharacterSelection, RoundResolvedPayload } from "../../../game/types";
 import CharacterSprite from "../../../feature/character-builder/ui/CharacterSprite";
 import GameButton from "../../../components/ui/Button";
+import Tag from "../../../components/ui/Tag";
+import { stagePointToViewport } from "../../../components/layout/kioskScale";
 import gameScreenArt from "../../../assets/gameScreen.jpg";
 import { ZONES, KEEPER_SPOT, STRIKER_SPOT, zoneButtonPosition, type ZoneId } from "../model/zoneLayout";
 import { buildBallChoreography, buildKeeperPose } from "../model/reveal";
 import Ball from "./Ball";
 import ImpactFX from "./ImpactFX";
 import PoseLayer from "./PoseLayer";
+
+const CONFETTI_COLORS = ["#0f8a45", "#ffffff", "#d7282f", "#ffc93c"];
 
 export interface PenaltySceneProps {
   strikerCharacter: CharacterSelection;
@@ -37,8 +41,8 @@ export interface PenaltySceneProps {
 // надёжнее в буквальном смысле наложить кольцо НА тень, унаследовав её
 // форму, чем изобретать отдельный эллипс.
 //
-// Подпись — тот же пиксельно-терминальный язык, что в HUD и баннере
-// результата (Press Start 2P, жёсткая рамка и тень без градиентов).
+// Подпись — та же золотая пиксельная метка (Tag), что "TY" на табло и
+// выбранные элементы по всей игре: золото = "это ты".
 // Пульсация — чистый CSS (.animate-you-ring-pulse, см. index.css), не
 // Framer Motion — та же причина, что и у .animate-podium-float там же:
 // перерисовки родителя её не прерывают.
@@ -46,16 +50,13 @@ function YouMarker({ shadowWidth }: { shadowWidth: string }) {
   return (
     <>
       <div
-        className="animate-you-ring-pulse absolute bottom-0 left-1/2 h-[14%] min-h-4 -translate-x-1/2 rounded-[50%] border-[0.4cqh] border-[var(--color-gold-500)] shadow-[0_0_0_2px_#04070d,0_0_1.2cqh_0.3cqh_rgba(255,201,60,0.6)]"
+        className="animate-you-ring-pulse absolute bottom-0 left-1/2 h-[14%] min-h-4 -translate-x-1/2 rounded-[50%] border-[0.55cqh] border-gold-500 shadow-[0_0_0_3px_var(--color-ink)]"
         style={{ width: `calc(${shadowWidth} * 1.25)` }}
         aria-hidden="true"
       />
-      <span
-        className="absolute bottom-[-3.4cqh] left-1/2 -translate-x-1/2 whitespace-nowrap border-2 border-[var(--color-gold-500)] bg-[#241c06e6] px-[1.2cqh] py-[0.4cqh] font-['Press_Start_2P'] text-[1.3cqh] leading-none text-[#ffe9a8] shadow-[0.3cqh_0.3cqh_0_rgba(0,0,0,0.45)]"
-        aria-hidden="true"
-      >
-        TO TY
-      </span>
+      <Tag tone="gold" size="sm" className="absolute bottom-[-78px] left-1/2 -translate-x-1/2 text-[24px] uppercase" aria-hidden="true">
+        To ty
+      </Tag>
     </>
   );
 }
@@ -93,8 +94,10 @@ function GroundShadow({ width }: { width: string }) {
 // газоне, где стоят ноги, рост уходит вверх от неё. Раньше якорь был
 // top-left, и вратарь визуально "висел" где-то в середине сетки ворот.
 // Конфетти (canvas-confetti) — только для GOL, стреляет из точки попадания
-// мяча (доля viewport 0..1, сцена = весь киоск, так что contactPoint%/100
-// это ровно то, что просит canvas-confetti). Задержка = моменту касания в
+// мяча. Холст конфетти лежит на весь вьюпорт, а сцена — 1920×1080 по центру
+// (см. components/layout/KioskStage), поэтому точку сцены переводим в долю
+// вьюпорта через stagePointToViewport (на киоске это просто contactPoint%/100).
+// Задержка = моменту касания в
 // хореографии мяча (см. model/reveal.ts) — иначе конфетти взорвётся раньше,
 // чем мяч долетит до сетки, и вся синхронизация развалится.
 function useGoalConfetti(result: RoundResolvedPayload | null) {
@@ -102,11 +105,12 @@ function useGoalConfetti(result: RoundResolvedPayload | null) {
     if (!result || result.result.outcome !== "GOL") return;
     const choreography = buildBallChoreography(result);
     const delayMs = choreography.impactAt * choreography.durationSec * 1000;
-    const origin = { x: choreography.contactPoint.x / 100, y: choreography.contactPoint.y / 100 };
+    const origin = stagePointToViewport(choreography.contactPoint.x, choreography.contactPoint.y);
 
     const id = setTimeout(() => {
-      confetti({ particleCount: 70, spread: 65, startVelocity: 38, gravity: 1.1, ticks: 130, origin, colors: ["#ffc93c", "#ffffff", "#2d7dd2"] });
-      confetti({ particleCount: 40, spread: 100, startVelocity: 24, ticks: 110, origin, scalar: 0.75, colors: ["#e5484d", "#ffc93c"] });
+      // Квадратное конфетти в цветах шарфа WKS + золото — пиксельное, как весь стадион.
+      confetti({ particleCount: 70, spread: 65, startVelocity: 38, gravity: 1.1, ticks: 130, origin, shapes: ["square"], colors: CONFETTI_COLORS });
+      confetti({ particleCount: 40, spread: 100, startVelocity: 24, ticks: 110, origin, scalar: 0.75, shapes: ["square"], colors: CONFETTI_COLORS });
     }, delayMs);
 
     return () => clearTimeout(id);
@@ -184,8 +188,14 @@ export default function PenaltyScene({ strikerCharacter, keeperCharacter, isStri
                 aria-pressed={myZone === zone.id}
                 onClick={() => onSelectZone(zone.id)}
               >
-                <span className="text-[4.6cqh] leading-none">{zone.id}</span>
-                <span className="text-[1.6cqh] font-normal tracking-[0.1em] opacity-90">{zone.points} PKT</span>
+                <span className="font-display text-[9.6cqh] font-normal leading-[0.8]">{zone.id}</span>
+                {/* Очки дважды: точками (сосчитать) и числом (прочитать) */}
+                <span className="flex items-center gap-[0.55cqh] text-[2.2cqh] tracking-[0.06em]">
+                  {Array.from({ length: zone.points }, (_, i) => (
+                    <i key={i} className="block h-[1.1cqh] w-[1.1cqh] bg-current" />
+                  ))}
+                  {zone.points} PKT
+                </span>
               </GameButton>
             </div>
           ))}

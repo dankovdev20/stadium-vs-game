@@ -48,7 +48,7 @@ export default function ImpactFX({ choreography, roundKey }: ImpactFXProps) {
             style={{ animationDelay: delay, left: 0, top: 0 }}
           />
           <span
-            className="animate-impact-flash absolute h-[6cqh] w-[6cqh] min-h-8 min-w-8 rounded-full bg-[var(--color-sky-500)]"
+            className="animate-impact-flash absolute h-[6cqh] w-[6cqh] min-h-8 min-w-8 rounded-full bg-[var(--color-azure-500)]"
             style={{ animationDelay: delay, left: 0, top: 0 }}
           />
         </>

@@ -6,6 +6,17 @@ export interface CharacterOption {
   /** Значения подставляются как CSS-переменные --part-primary/--part-accent/--part-metal. */
   palette: { primary: string; accent: string; metal?: string };
   tagline?: string;
+  /**
+   * Заготовка под пиксель-арт вместо SVG. PNG-слой этой части на ПОЛНЫЙ
+   * кадр персонажа (прозрачный фон, один и тот же холст у всех частей —
+   * слои просто кладутся друг на друга: ноги → корпус → голова). Холст
+   * держим в пропорции кадра 200×322 (например 50×80 px арта), рисуется с
+   * image-rendering: pixelated. Пока у ЛЮБОЙ из трёх выбранных частей нет
+   * sprite — персонаж рисуется старым SVG (см. ui/CharacterSprite).
+   */
+  sprite?: string;
+  /** PNG для карточки гардероба (только сама деталь). Нет — карточка рисует SVG-превью. */
+  thumb?: string;
 }
 
 // Głowa: "primary" — цвет волос, "accent" — цвет причёски/аксессуара.
