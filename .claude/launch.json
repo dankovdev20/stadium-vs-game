@@ -18,6 +18,12 @@
       "runtimeExecutable": "sh",
       "runtimeArgs": ["-c", "cd server && npm start"],
       "port": 3000
+    },
+    {
+      "name": "stand-3100",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd server && PORT=3100 npm start"],
+      "port": 3100
     }
   ]
 }
