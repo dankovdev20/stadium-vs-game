@@ -84,15 +84,24 @@ export function buildBallChoreography(result: RoundResolvedPayload): BallChoreog
 
   switch (presentation.ball) {
     case "post": {
+      // Удар в раму: мяч отскакивает от штанги наружу (от центра ворот) и
+      // чуть вниз, от перекладины — вниз-назад на поле, потом растворяется
+      // (см. ui/Ball.tsx: fades). Отскок короткий — мяч не улетает за экран.
       contact = side < 0 ? GOAL_LANDMARKS.postLeft : side > 0 ? GOAL_LANDMARKS.postRight : GOAL_LANDMARKS.crossbarCenter;
-      settle = { x: contact.x + (side <= 0 ? -16 : 16), y: contact.y + 22 };
+      settle = side === 0 ? { x: contact.x - 3, y: contact.y + 12 } : { x: contact.x + side * 9, y: contact.y + 10 };
       lift = 20;
       break;
     }
     case "over": {
-      contact = GOAL_LANDMARKS.overBar;
-      settle = { x: contact.x + side * 6, y: -12 };
-      lift = 26;
+      // Над перекладиной: мяч чиркает по верхнему краю рамы над выбранной
+      // зоной, подскакивает вверх-назад (за ворота) и растворяется. Раньше
+      // улетал точкой y=-12, то есть просто за верх экрана.
+      const barX = Math.min(Math.max(zonePoint.x, GOAL_LANDMARKS.postLeft.x + 2), GOAL_LANDMARKS.postRight.x - 2);
+      // Центр мяча — на радиус выше рамы (мяч ~9cqh, радиус ≈ 4.5% сцены):
+      // мяч касается перекладины, а не проходит сквозь неё.
+      contact = { x: barX, y: GOAL_LANDMARKS.crossbarTop - 4.5 };
+      settle = { x: contact.x + side * 4, y: contact.y - 9 };
+      lift = 22;
       break;
     }
     case "deflected": {

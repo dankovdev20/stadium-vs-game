@@ -1,0 +1,162 @@
+{
+  "$comment": "Сгенерировано scripts/characters/build-characters.mjs — не править руками.",
+  "frameSize": 64,
+  "bodyType": "teen",
+  "directions": [
+    "up",
+    "left",
+    "down",
+    "right"
+  ],
+  "animations": {
+    "idle": {
+      "frames": 2,
+      "rows": 4
+    },
+    "combat_idle": {
+      "frames": 2,
+      "rows": 4
+    },
+    "walk": {
+      "frames": 9,
+      "rows": 4
+    },
+    "run": {
+      "frames": 8,
+      "rows": 4
+    },
+    "jump": {
+      "frames": 5,
+      "rows": 4
+    },
+    "emote": {
+      "frames": 3,
+      "rows": 4
+    },
+    "hurt": {
+      "frames": 6,
+      "rows": 1
+    }
+  },
+  "partOrder": [
+    "legs",
+    "body",
+    "head"
+  ],
+  "parts": {
+    "legs": [
+      {
+        "id": 1,
+        "label": "Barwy WKS",
+        "tagline": "Białe spodenki",
+        "back": false
+      },
+      {
+        "id": 2,
+        "label": "Klasyczne",
+        "tagline": "Pewny krok",
+        "back": false
+      },
+      {
+        "id": 3,
+        "label": "Granatowe",
+        "tagline": "Szybki start",
+        "back": false
+      },
+      {
+        "id": 4,
+        "label": "Zielone",
+        "tagline": "Zwinne nogi",
+        "back": false
+      },
+      {
+        "id": 5,
+        "label": "Czerwone",
+        "tagline": "Mocny strzał",
+        "back": false
+      },
+      {
+        "id": 6,
+        "label": "Bramkarskie",
+        "tagline": "Długie spodnie",
+        "back": false
+      }
+    ],
+    "body": [
+      {
+        "id": 1,
+        "label": "Barwy WKS",
+        "tagline": "Koszulka Śląska",
+        "back": false
+      },
+      {
+        "id": 2,
+        "label": "Biała",
+        "tagline": "Klasyczna koszulka",
+        "back": false
+      },
+      {
+        "id": 3,
+        "label": "Polo",
+        "tagline": "Kapitan drużyny",
+        "back": false
+      },
+      {
+        "id": 4,
+        "label": "Czerwona",
+        "tagline": "Ognisty napastnik",
+        "back": false
+      },
+      {
+        "id": 5,
+        "label": "Błękitna",
+        "tagline": "Gwiazda boiska",
+        "back": false
+      },
+      {
+        "id": 6,
+        "label": "Bramkarska",
+        "tagline": "Broni jak mur",
+        "back": false
+      }
+    ],
+    "head": [
+      {
+        "id": 1,
+        "label": "Bandana",
+        "tagline": "Gotowy do gry",
+        "back": false
+      },
+      {
+        "id": 2,
+        "label": "Frotka",
+        "tagline": "Styl kapitana",
+        "back": false
+      },
+      {
+        "id": 3,
+        "label": "Loki",
+        "tagline": "Fryzura z charakterem",
+        "back": true
+      },
+      {
+        "id": 4,
+        "label": "Kucyk",
+        "tagline": "Szybka jak wiatr",
+        "back": true
+      },
+      {
+        "id": 5,
+        "label": "Dredy",
+        "tagline": "Odważny wybór",
+        "back": false
+      },
+      {
+        "id": 6,
+        "label": "Korona",
+        "tagline": "Król boiska",
+        "back": false
+      }
+    ]
+  }
+}

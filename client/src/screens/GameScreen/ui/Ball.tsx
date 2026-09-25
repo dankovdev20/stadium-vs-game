@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import football from "../../../assets/football.svg";
+import gameBall from "../../../assets/GameBall.png";
 import type { RoundResolvedPayload } from "../../../game/types";
 import { STRIKER_SPOT } from "../model/zoneLayout";
 import { buildBallChoreography, BALL_TIMES } from "../model/reveal";
@@ -25,8 +25,8 @@ const IDLE_POS = { x: STRIKER_SPOT.x + 4, y: STRIKER_SPOT.y - 6 };
 export default function Ball({ result }: BallProps) {
   if (!result) {
     return (
-      <div className="absolute z-[4] h-[9cqh] w-[9cqh] min-h-8 min-w-8 -translate-x-1/2 -translate-y-1/2" style={{ left: `${IDLE_POS.x}%`, top: `${IDLE_POS.y}%` }} aria-hidden="true">
-        <img src={football} alt="" className="block h-full w-full object-contain" />
+      <div className="absolute z-[4] h-[10.4cqh] w-[10.4cqh] min-h-8 min-w-8 -translate-x-1/2 -translate-y-1/2" style={{ left: `${IDLE_POS.x}%`, top: `${IDLE_POS.y}%` }} aria-hidden="true">
+        <img src={gameBall} alt="" className="block h-full w-full object-contain" />
       </div>
     );
   }
@@ -38,7 +38,10 @@ export default function Ball({ result }: BallProps) {
   // 6 значений — по одному на опорную точку (start, start, apex, contact, contact-hold, settle).
   const rotate = [0, 0, 300, 560, 560, 620];
   const scale = [1, 1, 1, 0.82, 0.82, 1];
-  const fades = presentation.ball === "zone" || presentation.ball === "over";
+  // Мяч растворяется в конце любого исхода, кроме сейва (там его держит/отбивает
+  // вратарь и он остаётся на поле до конца раунда): гол — в сетке, штанга и
+  // "над перекладиной" — после отскока от рамы ворот.
+  const fades = presentation.ball !== "deflected";
   const opacity = fades ? [1, 1, 1, 1, 1, 0] : [1, 1, 1, 1, 1, 1];
   // 5 значений — по одному на отрезок МЕЖДУ точками: держит-замах / дуга вверх
   // / дуга вниз-до-касания / хит-стоп-заморозка / успокоение.
@@ -49,9 +52,9 @@ export default function Ball({ result }: BallProps) {
       {[0.09, 0.055, 0.03].map((echoOpacityScale, i) => (
         <motion.img
           key={i}
-          src={football}
+          src={gameBall}
           alt=""
-          className="absolute z-[4] h-[9cqh] w-[9cqh] min-h-8 min-w-8 -translate-x-1/2 -translate-y-1/2 object-contain blur-[2px]"
+          className="absolute z-[4] h-[10.4cqh] w-[10.4cqh] min-h-8 min-w-8 -translate-x-1/2 -translate-y-1/2 object-contain blur-[2px]"
           initial={{ left: left[0], top: top[0], opacity: 0 }}
           animate={{ left, top, opacity: opacity.map((o) => o * echoOpacityScale) }}
           transition={{ duration: durationSec, times: BALL_TIMES, ease: easings, delay: 0.03 + i * 0.035 }}
@@ -59,13 +62,13 @@ export default function Ball({ result }: BallProps) {
       ))}
 
       <motion.div
-        className="absolute z-[5] h-[9cqh] w-[9cqh] min-h-8 min-w-8 -translate-x-1/2 -translate-y-1/2"
+        className="absolute z-[5] h-[10.4cqh] w-[10.4cqh] min-h-8 min-w-8 -translate-x-1/2 -translate-y-1/2"
         initial={{ left: left[0], top: top[0] }}
         animate={{ left, top }}
         transition={{ duration: durationSec, times: BALL_TIMES, ease: easings }}
       >
         <motion.img
-          src={football}
+          src={gameBall}
           alt=""
           className="block h-full w-full object-contain"
           initial={{ rotate: 0, scale: 1, opacity: 1 }}

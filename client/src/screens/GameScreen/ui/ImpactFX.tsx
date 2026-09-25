@@ -19,8 +19,6 @@ export default function ImpactFX({ choreography, roundKey }: ImpactFXProps) {
   const delayMs = Math.round(choreography.impactAt * durationSec * 1000);
   const delay = `${delayMs}ms`;
 
-  if (presentation.sceneEffect === "miss" && presentation.ball === "over") return null;
-
   return (
     <div
       key={roundKey}
@@ -52,6 +50,14 @@ export default function ImpactFX({ choreography, roundKey }: ImpactFXProps) {
             style={{ animationDelay: delay, left: 0, top: 0 }}
           />
         </>
+      )}
+
+      {/* Над перекладиной — мяч лишь чиркает по раме: короткая вспышка без искр и тряски */}
+      {presentation.ball === "over" && (
+        <span
+          className="animate-impact-flash absolute h-[5cqh] w-[5cqh] min-h-7 min-w-7 rounded-full bg-[var(--color-gold-500)]"
+          style={{ animationDelay: delay, left: 0, top: 0 }}
+        />
       )}
 
       {presentation.ball === "post" && (

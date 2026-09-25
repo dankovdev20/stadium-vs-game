@@ -1,0 +1,33 @@
+{
+  "$comment": "Состав персонажей конструктора. После правки: `npm run characters` — скрипт скачает слои Universal LPC и пересоберёт PNG в src/assets/characters. `def` — имя файла из sheet_definitions генератора, `variant` — цвет/вариант как на сайте. id совпадают с id в state:sync (сервер их не трактует, только хранит).",
+  "source": "https://raw.githubusercontent.com/lovechan404/Pretty-Universal-LPC-Spritesheet-Character-Generator/master",
+  "bodyType": "teen",
+  "animations": ["idle", "combat_idle", "walk", "run", "jump", "emote", "hurt"],
+  "base": [{ "def": "body", "variant": "light" }],
+  "parts": {
+    "head": [
+      { "id": 1, "label": "Bandana", "tagline": "Gotowy do gry", "items": [{ "def": "heads_human_male", "variant": "light" }, { "def": "hair_buzzcut", "variant": "dark brown" }, { "def": "hat_bandana", "variant": "red" }] },
+      { "id": 2, "label": "Frotka", "tagline": "Styl kapitana", "items": [{ "def": "heads_human_male", "variant": "light" }, { "def": "hair_flat_top_fade", "variant": "black" }, { "def": "hat_headband_thick", "variant": "white" }] },
+      { "id": 3, "label": "Loki", "tagline": "Fryzura z charakterem", "items": [{ "def": "heads_human_male", "variant": "light" }, { "def": "hair_curls_large", "variant": "ginger" }] },
+      { "id": 4, "label": "Kucyk", "tagline": "Szybka jak wiatr", "items": [{ "def": "heads_human_female", "variant": "light" }, { "def": "hair_topknot_long", "variant": "blonde" }] },
+      { "id": 5, "label": "Dredy", "tagline": "Odważny wybór", "items": [{ "def": "heads_human_male", "variant": "light" }, { "def": "hair_dreadlocks_short", "variant": "dark brown" }] },
+      { "id": 6, "label": "Korona", "tagline": "Król boiska", "items": [{ "def": "heads_human_male", "variant": "light" }, { "def": "hair_idol", "variant": "blonde" }, { "def": "hat_formal_crown", "variant": "gold" }] }
+    ],
+    "body": [
+      { "id": 1, "label": "Barwy WKS", "tagline": "Koszulka Śląska", "items": [{ "def": "torso_clothes_tshirt", "variant": "green" }] },
+      { "id": 2, "label": "Biała", "tagline": "Klasyczna koszulka", "items": [{ "def": "torso_clothes_tshirt_vneck", "variant": "white" }] },
+      { "id": 3, "label": "Polo", "tagline": "Kapitan drużyny", "items": [{ "def": "torso_clothes_shortsleeve_polo", "variant": "navy" }] },
+      { "id": 4, "label": "Czerwona", "tagline": "Ognisty napastnik", "items": [{ "def": "torso_clothes_tshirt_scoop", "variant": "red" }] },
+      { "id": 5, "label": "Błękitna", "tagline": "Gwiazda boiska", "items": [{ "def": "torso_clothes_tshirt_buttoned", "variant": "sky" }] },
+      { "id": 6, "label": "Bramkarska", "tagline": "Broni jak mur", "items": [{ "def": "torso_clothes_longsleeve2", "variant": "yellow" }, { "def": "arms_gloves", "variant": "white" }] }
+    ],
+    "legs": [
+      { "id": 1, "label": "Barwy WKS", "tagline": "Białe spodenki", "items": [{ "def": "legs_shorts", "variant": "white" }, { "def": "feet_socks_high", "variant": "green" }, { "def": "feet_shoes_basic", "variant": "black" }] },
+      { "id": 2, "label": "Klasyczne", "tagline": "Pewny krok", "items": [{ "def": "legs_shorts", "variant": "black" }, { "def": "feet_socks_high", "variant": "white" }, { "def": "feet_shoes_basic", "variant": "black" }] },
+      { "id": 3, "label": "Granatowe", "tagline": "Szybki start", "items": [{ "def": "legs_shorts", "variant": "navy" }, { "def": "feet_socks_high", "variant": "red" }, { "def": "feet_shoes_basic", "variant": "white" }] },
+      { "id": 4, "label": "Zielone", "tagline": "Zwinne nogi", "items": [{ "def": "legs_shorts_short", "variant": "forest" }, { "def": "feet_socks_high", "variant": "white" }, { "def": "feet_shoes_basic", "variant": "red" }] },
+      { "id": 5, "label": "Czerwone", "tagline": "Mocny strzał", "items": [{ "def": "legs_shorts", "variant": "red" }, { "def": "feet_socks_high", "variant": "red" }, { "def": "feet_shoes_basic", "variant": "black" }] },
+      { "id": 6, "label": "Bramkarskie", "tagline": "Długie spodnie", "items": [{ "def": "legs_pants2", "variant": "charcoal" }, { "def": "feet_shoes_basic", "variant": "black" }] }
+    ]
+  }
+}
