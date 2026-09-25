@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Кэш скачанных слоёв LPC (scripts/characters/build-characters.mjs)
+scripts/characters/.cache

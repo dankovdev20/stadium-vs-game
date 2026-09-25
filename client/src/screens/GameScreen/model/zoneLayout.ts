@@ -90,7 +90,8 @@ export const GOAL_LANDMARKS = {
   postLeft: { x: fromArtX(41.2), y: fromArtY(50) },
   postRight: { x: fromArtX(85.0), y: fromArtY(50) },
   crossbarCenter: { x: fromArtX(63.0), y: fromArtY(33.3) },
-  overBar: { x: fromArtX(63.0), y: fromArtY(10) },
+  /** Верхний край перекладины (замерено по арту: белая рама 34.2%–35.2%). */
+  crossbarTop: fromArtY(34.2),
   /** Линия ворот — где штанги касаются газона (нижний край рамки ворот). */
   groundY: fromArtY(70.2),
   goalCenterX: fromArtX(63.0),

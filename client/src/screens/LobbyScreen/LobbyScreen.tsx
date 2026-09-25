@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import ScreenShell from "../../components/layout/ScreenShell";
 import { useConnectionStatus, useGameEmit, useGameState } from "../../game/GameContext";
 import type { GameState, PlayerRole } from "../../game/types";
@@ -6,6 +6,8 @@ import { motion } from "motion/react";
 import PartnerLogo from "../../components/brand/PartnerLogo";
 import PixelIcon from "../../components/ui/PixelIcon";
 import ScarfStripe from "../../components/ui/ScarfStripe";
+import GameButton from "../../components/ui/Button";
+import CreditsDialog from "../../feature/credits/ui/CreditsDialog";
 
 // App монтирует экран с key={resetEpoch}: после room:hard_reset он
 // пересоздаётся с нуля, и оптимистичный выбор ниже не может "пережить" сброс.
@@ -26,6 +28,9 @@ export default function LobbyScreen() {
   // effect'а и без setState в нём, просто производным значением.
   const [pending, setPending] = useState<{ role: PlayerRole; errorAtTap: GameState["lastError"] } | null>(null);
   const pendingRole = pending && pending.errorAtTap === lastError ? pending.role : null;
+
+  const [creditsOpen, setCreditsOpen] = useState(false);
+  const closeCredits = useCallback(() => setCreditsOpen(false), []);
 
   const slots = sync?.slots ?? { player_1_taken: false, player_2_taken: false };
   // Роль, которую этот клиент уже выбрал (подтверждённо или оптимистично) —
@@ -121,6 +126,13 @@ export default function LobbyScreen() {
           WKS Śląsk Wrocław × Roboklocki
         </p>
         <ScarfStripe className="absolute inset-x-0 bottom-0 shadow-[0_-4px_0_0_var(--color-ink)]" />
+
+        {/* Свободный угол — ничего из раскладки лобби не сдвигается */}
+        <GameButton size="md" variant="secondary" onClick={() => setCreditsOpen(true)} className="absolute bottom-12 right-12 min-h-[72px] px-7 text-[26px] uppercase">
+          Autorzy
+        </GameButton>
+
+        {creditsOpen && <CreditsDialog onClose={closeCredits} />}
       </motion.main>
     </ScreenShell>
   );
