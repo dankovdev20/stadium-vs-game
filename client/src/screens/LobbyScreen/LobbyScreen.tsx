@@ -3,6 +3,7 @@ import ScreenShell from "../../components/layout/ScreenShell";
 import { useConnectionStatus, useGameEmit, useGameState } from "../../game/GameContext";
 import type { GameState, PlayerRole } from "../../game/types";
 import { motion } from "motion/react";
+import BrickStripe from "../../components/brand/BrickStripe";
 import PartnerLogo from "../../components/brand/PartnerLogo";
 import PixelIcon from "../../components/ui/PixelIcon";
 import ScarfStripe from "../../components/ui/ScarfStripe";
@@ -131,7 +132,12 @@ export default function LobbyScreen() {
         <p className="absolute inset-x-0 bottom-[52px] text-center text-[28px] font-bold uppercase tracking-[0.08em] text-ink">
           WKS Śląsk Wrocław × Roboklocki
         </p>
-        <ScarfStripe className="absolute inset-x-0 bottom-0 shadow-[0_-4px_0_0_var(--color-ink)]" />
+        {/* Нижняя полоса: слева шарф WKS, справа кирпичики Roboklocki — стык
+            ровно по центру, под "×" в подписи партнёров. */}
+        <div className="absolute inset-x-0 bottom-0 flex items-end" aria-hidden="true">
+          <ScarfStripe className="flex-1 shadow-[0_-4px_0_0_var(--color-ink)]" />
+          <BrickStripe className="block flex-1" />
+        </div>
 
         {/* Свободный угол — ничего из раскладки лобби не сдвигается */}
         <GameButton size="md" variant="secondary" onClick={() => setCreditsOpen(true)} className="absolute bottom-12 right-12 min-h-[72px] px-7 text-[26px] uppercase">

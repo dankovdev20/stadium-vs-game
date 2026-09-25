@@ -82,6 +82,14 @@
   --color-wks-green: #0f8a45;
   --color-wks-red: #d7282f;
 
+  /* Бренд Roboklocki — сняты с логотипа; кирпичики LEGO (BrickStripe) */
+  --color-robo-navy: #26306d;
+  --color-robo-navy-hi: #4a558f;
+  --color-robo-navy-shade: #161c47;
+  --color-robo-red: #e42a30;
+  --color-robo-red-hi: #f06a6e;
+  --color-robo-red-shade: #a81a1f;
+
   /* Jersey 10 — дисплей (счёт, GOL!, заголовки); Pixelify Sans — интерфейс */
   --font-display: "Jersey 10", "Pixelify Sans", system-ui, sans-serif;
   --font-ui: "Pixelify Sans", system-ui, sans-serif;
