@@ -124,9 +124,6 @@ export default function LobbyScreen() {
             </header>
 
             <div className="mb-8 text-center sm:mb-10">
-              <p className="mb-4 font-['Press_Start_2P'] text-xs uppercase leading-relaxed tracking-normal text-[#b9d4c0] sm:mb-5 sm:text-sm">
-                Select player
-              </p>
               <h1 className="font-['Press_Start_2P'] text-2xl uppercase leading-relaxed tracking-normal text-[#d7e9dc] drop-shadow-[3px_3px_0_#234f38] sm:text-5xl">
                 Wybierz stanowisko
               </h1>
@@ -137,11 +134,23 @@ export default function LobbyScreen() {
               {renderSlotButton("player_2", "Gracz 2")}
             </div>
 
-            {myRole && (
-              <footer className="mt-8 min-h-6 text-center font-['Press_Start_2P'] text-xs uppercase leading-relaxed tracking-normal text-[#b9d4c0]/80 sm:mt-10 sm:text-sm">
-                Oczekiwanie na drugiego gracza...
-              </footer>
-            )}
+            <footer className="mt-8 min-h-6 text-center font-['Press_Start_2P'] text-xs uppercase leading-relaxed tracking-normal text-[#b9d4c0]/80 sm:mt-10 sm:text-sm">
+              {mySelection ? (
+                <span>Oczekiwanie na drugiego gracza...</span>
+              ) : (
+                <motion.span
+                  aria-hidden="true"
+                  animate={{ opacity: [1, 1, 0, 0] }}
+                  transition={{ duration: 1, times: [0, 0.5, 0.5, 1], repeat: Infinity, ease: "linear" }}
+                >
+                  Wybierz swojego gracza
+                </motion.span>
+              )}
+            </footer>
+
+            <div className="absolute bottom-4 left-0 right-0 text-center font-['Press_Start_2P'] text-[10px] uppercase leading-relaxed tracking-normal text-[#b9d4c0]/50 sm:bottom-6 sm:text-xs">
+              WKS x Roboklocki®
+            </div>
           </div>
         </motion.main>
       </div>
