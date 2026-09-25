@@ -63,8 +63,8 @@ for (let y = 0; y < H; y++) {
   }
 }
 
-export const PEDESTAL_WIDTH = W * CELL;
-export const PEDESTAL_HEIGHT = H * CELL;
+const PEDESTAL_WIDTH = W * CELL;
+const PEDESTAL_HEIGHT = H * CELL;
 
 export default function Pedestal({ className = "" }: PedestalProps) {
   return (

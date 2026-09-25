@@ -1,6 +1,6 @@
 import GameButton from "../../../components/ui/Button";
 import type { CharacterOption } from "../model/options";
-import PartTilePreview from "../svg/PartTilePreview";
+import PartPreview from "./PartPreview";
 
 export type BuilderCategory = "head" | "body" | "legs";
 
@@ -9,6 +9,9 @@ const TABS: { key: BuilderCategory; label: string }[] = [
   { key: "body", label: "Korpus" },
   { key: "legs", label: "Nogi" },
 ];
+
+// Целые масштабы превью на вкладке: детали разного размера.
+const TAB_SCALE = { head: 2, body: 3, legs: 3 };
 
 interface CategoryTabsProps {
   active: BuilderCategory;
@@ -30,9 +33,9 @@ export default function CategoryTabs({ active, onChange, worn }: CategoryTabsPro
           variant={active === tab.key ? "primary" : "secondary"}
           aria-pressed={active === tab.key}
           onClick={() => onChange(tab.key)}
-          className="h-[136px] flex-1 flex-col gap-0.5 px-2 pb-2.5 text-[28px]"
+          className="h-[136px] flex-1 flex-col gap-0 px-2 pb-2.5 text-[28px]"
         >
-          <PartTilePreview category={tab.key} option={worn[tab.key]} className="h-[78px] w-[78px]" />
+          <PartPreview part={tab.key} optionId={worn[tab.key].id} scale={TAB_SCALE} height={88} />
           {tab.label}
         </GameButton>
       ))}
