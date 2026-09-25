@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useReducer, useRef, useState } from "react";
 import { gameReducer } from "./gameReducer";
-import { createConnection } from "../services/connection";
+import { createConnection, resolveServerUrl } from "../services/connection";
 import type { GameConnection } from "../services/connection/types";
 import { type GameState, type ServerAction, type GamePhase, type RoleAssignedPayload, initialGameState } from "./types";
 import { clearSession, loadSession, saveSession } from "./session";
@@ -32,7 +32,7 @@ const ConnectionStatusContext = createContext<ConnectionStatus>({ connected: fal
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, initialGameState);
-  const usingMock = !import.meta.env.VITE_WS_URL;
+  const usingMock = !resolveServerUrl();
   const [status, setStatus] = useState<ConnectionStatus>({ connected: false, restoring: false, connectCount: 0, usingMock });
 
   // ⚠️ лениво, а не в аргументе useRef — иначе createConnection() дёргается на каждый рендер
