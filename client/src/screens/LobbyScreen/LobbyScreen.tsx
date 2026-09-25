@@ -97,10 +97,16 @@ export default function LobbyScreen() {
         transition={{ duration: 0.4, ease: "easeOut" }}
         className="relative h-full w-full"
       >
-        <header className="absolute inset-x-12 top-11 flex items-center justify-between">
-          <PartnerLogo partner="wks" />
+        {/* Сетка 1fr/auto/1fr, а не justify-between: таблички партнёров разной
+            ширины, а название игры обязано стоять ровно по центру экрана. */}
+        <header className="absolute inset-x-12 top-9 grid grid-cols-[1fr_auto_1fr] items-center">
+          <div className="justify-self-start">
+            <PartnerLogo partner="wks" />
+          </div>
           <span className="font-display text-[52px] leading-none tracking-[0.12em] text-ink-700">PENALTY SHOWDOWN</span>
-          <PartnerLogo partner="roboklocki" />
+          <div className="justify-self-end">
+            <PartnerLogo partner="roboklocki" />
+          </div>
         </header>
 
         <h1 className="text-outline absolute inset-x-0 top-[188px] text-center font-display text-[160px] font-normal uppercase leading-none">

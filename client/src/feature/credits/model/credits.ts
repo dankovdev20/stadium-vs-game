@@ -25,8 +25,6 @@ export const DEVELOPERS: CreditPerson[] = [
   { name: "cra1zer2", role: "Programowanie" },
 ];
 
-export const PARTNERS = ["WKS Śląsk Wrocław", "Roboklocki"];
-
 /** Чужие ассеты, которые требуют или заслуживают указания авторства. */
 export const ASSET_CREDITS: CreditAsset[] = [
   { work: "Czcionka Jersey 10", authors: "Sarah Cadigan-Fried", license: "SIL Open Font License 1.1" },

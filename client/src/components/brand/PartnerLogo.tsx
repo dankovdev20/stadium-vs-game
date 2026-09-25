@@ -1,12 +1,17 @@
-import Tag from "../ui/Tag";
+import wksLogo from "../../assets/WKS.png";
+import roboklockiLogo from "../../assets/Roboklocki.png";
 
-// Логотипы партнёров стенда. Файлов пока нет — место под них уже
-// зарезервировано (230×88 в шапке лобби), а до их появления в слоте стоит
-// аккуратная текстовая метка. Когда появятся файлы: положить их в
-// src/assets/partners/ и прописать импорт в `src` ниже — вёрстка не меняется.
+// Логотипы партнёров стенда — на белых "табличках спонсоров", как рекламные
+// щиты вокруг поля. Табличка решает сразу две задачи: у логотипа
+// Roboklocki непрозрачный белый фон, и на белой табличке он просто
+// сливается с ней (вырезать фон не нужно — никаких ореолов по краям букв);
+// а оба логотипа получают одинаковую пиксельную рамку, как всё в игре.
+//
+// Высота логотипа — 64px: герб WKS нарисован ровно 64×64, в 1:1 он чёткий
+// (при масштабировании растровый герб начинает мылиться).
 const PARTNERS = {
-  wks: { name: "WKS Śląsk", src: undefined as string | undefined },
-  roboklocki: { name: "Roboklocki", src: undefined as string | undefined },
+  wks: { name: "WKS Śląsk Wrocław", src: wksLogo },
+  roboklocki: { name: "Roboklocki", src: roboklockiLogo },
 } as const;
 
 export type PartnerId = keyof typeof PARTNERS;
@@ -15,14 +20,8 @@ export default function PartnerLogo({ partner }: { partner: PartnerId }) {
   const { name, src } = PARTNERS[partner];
 
   return (
-    <div className="flex h-[88px] w-[230px] items-center justify-center">
-      {src ? (
-        <img src={src} alt={name} className="max-h-full max-w-full object-contain" />
-      ) : (
-        <Tag tone="paper" className="uppercase tracking-wide">
-          {name}
-        </Tag>
-      )}
+    <div className="pix-frame surface-white inline-grid place-items-center px-3.5 py-3 [--px-depth:6px] [--px-drop:8px]">
+      <img src={src} alt={name} className="block h-16 w-auto" draggable={false} />
     </div>
   );
 }
