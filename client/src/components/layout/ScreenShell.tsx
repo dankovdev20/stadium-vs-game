@@ -1,40 +1,39 @@
 import { type ReactNode } from "react";
+import stadiumArt from "../../assets/gameScreen.jpg";
+import KioskStage from "./KioskStage";
 
 interface ScreenShellProps {
-  children: ReactNode;
-  /** "light" — яркая трава (лобби/конструктор), "dark" — приглушённая (матч). */
-  tone?: "light" | "dark";
+  children?: ReactNode;
   /**
-   * Точка замены заглушки на реальный арт: когда появится фото стадиона,
-   * достаточно передать сюда URL — вёрстка экрана не меняется.
+   * "stadium" — арт стадиона под светлой пастельной вуалью (лобби,
+   * раздевалка, финал, экраны ожидания): фон спокойный, контент поверх
+   * читается. "arena" — для экрана матча, который рисует арт сам внутри
+   * сцены; снаружи (поля вне 16:9) — тот же арт, притушенный чернилами.
    */
-  backgroundImage?: string;
-  className?: string;
+  tone?: "stadium" | "arena";
 }
 
-// Общий полноэкранный каркас фона для всех "не-стартовых" экранов — тема
-// "стадион" вместо плоской заливки (полосы кошения + виньетка, см. index.css).
+// Общий каркас всех экранов: фон на весь вьюпорт + сцена 1920×1080.
 //
-// ВАЖНО: html/body заблокированы (overflow: hidden, см. index.css) — это
-// нужно против случайных зум-жестов и rubber-band скролла на киоске. Но это
-// означает, что контент экрана, который не влезает по высоте на конкретном
-// планшете (например конструктор персонажа с тремя рядами карточек),
-// становится физически недостижимым — прокрутить некуда. Поэтому сам
-// ScreenShell даёт СВОЙ внутренний скролл-контейнер: внешний div остаётся
-// фиксированного размера (кадр киоска), а children прокручиваются локально.
-export default function ScreenShell({ children, tone = "light", backgroundImage, className = "" }: ScreenShellProps) {
-  const toneClass = tone === "dark" ? "pitch-bg-dark" : "pitch-bg";
-
+// Фон — один и тот же арт стадиона на всех экранах: ребёнок не "переходит
+// между приложениями", а остаётся на одном стадионе (трибуна → раздевалка →
+// поле). Заменил зелёную CRT-сетку со scanlines.
+//
+// Скролла нет намеренно: html/body заблокированы (kiosk, см. index.css), а
+// сцена целиком масштабируется под окно — контенту не бывает тесно.
+export default function ScreenShell({ children, tone = "stadium" }: ScreenShellProps) {
   return (
-    <div
-      className={`relative h-dvh w-full overflow-hidden ${toneClass} ${className}`}
-      style={
-        backgroundImage
-          ? { backgroundImage: `url(${backgroundImage})`, backgroundSize: "cover", backgroundPosition: "center" }
-          : undefined
-      }
-    >
-      <div className="relative z-10 h-full w-full overflow-x-hidden overflow-y-auto overscroll-contain">{children}</div>
+    <div className="relative h-dvh w-full overflow-hidden bg-sky-300">
+      <img src={stadiumArt} alt="" aria-hidden="true" className="pixelated absolute inset-0 h-full w-full object-cover" />
+      <div
+        aria-hidden="true"
+        className={
+          tone === "arena"
+            ? "absolute inset-0 bg-ink/55"
+            : "absolute inset-0 bg-[linear-gradient(180deg,rgb(230_242_251/0.8)_0%,rgb(238_233_247/0.86)_100%)]"
+        }
+      />
+      <KioskStage>{children}</KioskStage>
     </div>
   );
 }

@@ -1,24 +1,10 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
 
-@import "@fontsource/baloo-2";
-@import "@fontsource/anton";
-@import "@fontsource/press-start-2p";
-@import "@fontsource/poppins/600.css";
-@import "@fontsource/poppins/700.css";
-
-@keyframes shrink {
-  from {
-    width: 100%;
-  }
-  to {
-    width: 0%;
-  }
-}
-
-.animate-shrink {
-  animation: shrink linear forwards;
-}
+@import "@fontsource/jersey-10";
+@import "@fontsource/pixelify-sans/500.css";
+@import "@fontsource/pixelify-sans/600.css";
+@import "@fontsource/pixelify-sans/700.css";
 
 /*
  * Чистый CSS вместо Framer Motion для бесконечного "парения" манекена в
@@ -237,6 +223,277 @@
   animation: banner-drop 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
 }
 
+
+/*
+ * Пиксельный язык интерфейса ("Пастельный стадион", см. styles/tokens.css).
+ *
+ * Рамка — 4 жёсткие тени (сверху/снизу/слева/справа) вместо border: углы
+ * при этом остаются пустыми, и получается "ступенька" в один пиксель —
+ * ровно как рамки ворот и табло на арте. border-radius в проекте не
+ * используем вообще.
+ *
+ * Всё настраивается CSS-переменными, чтобы варианты (surface-*) и
+ * состояния (нажатие) меняли одно значение, а не переписывали весь
+ * box-shadow:
+ *   --px-b      толщина рамки
+ *   --px-c      цвет рамки
+ *   --px-hi     светлая полоса сверху (блик)
+ *   --px-shade  тёмная "ступень" снизу (объём)
+ *   --px-depth  высота этой ступени
+ *   --px-drop   жёсткая тень под предметом (без blur)
+ */
+@layer components {
+  .pix-frame {
+    --px-b: 4px;
+    --px-c: var(--color-ink);
+    --px-hi: transparent;
+    --px-shade: transparent;
+    --px-depth: 0px;
+    --px-drop: 0px;
+    box-shadow:
+      inset 0 6px 0 0 var(--px-hi),
+      inset 0 calc(-1 * var(--px-depth)) 0 0 var(--px-shade),
+      0 calc(-1 * var(--px-b)) 0 0 var(--px-c),
+      0 var(--px-b) 0 0 var(--px-c),
+      calc(-1 * var(--px-b)) 0 0 0 var(--px-c),
+      var(--px-b) 0 0 0 var(--px-c),
+      0 calc(var(--px-b) + var(--px-drop)) 0 0 rgb(42 46 82 / 0.28);
+  }
+
+  .pix-frame-lg {
+    --px-b: 6px;
+  }
+
+  /* Приподнятый предмет: кнопки, плитки, панели */
+  .pix-raised {
+    --px-depth: 10px;
+    --px-drop: 8px;
+  }
+
+  .pix-flat {
+    --px-depth: 8px;
+    --px-drop: 0px;
+  }
+
+  /*
+   * Нажатие — только CSS (translate + сжатие ступени, 80мс линейно): отклик
+   * пальцу обязан быть мгновенным. Свойство `translate` (а не transform) —
+   * чтобы не спорить с transform, который пишет Framer Motion (пульс
+   * выбранной зоны и т.п.).
+   */
+  .pix-press {
+    transition:
+      translate 80ms linear,
+      box-shadow 80ms linear;
+  }
+
+  .pix-press:not(:disabled):active {
+    translate: 0 6px;
+    --px-depth: 4px;
+    --px-drop: 2px;
+  }
+
+  .surface-gold {
+    background-color: var(--color-gold-500);
+    --px-hi: var(--color-gold-300);
+    --px-shade: var(--color-gold-700);
+  }
+
+  .surface-paper {
+    background-color: var(--color-paper);
+    --px-hi: #fff;
+    --px-shade: var(--color-paper-shade);
+  }
+
+  .surface-white {
+    background-color: #fff;
+    --px-hi: #fff;
+    --px-shade: var(--color-paper-shade);
+  }
+
+  .surface-coral {
+    background-color: var(--color-coral-500);
+    --px-hi: var(--color-coral-300);
+    --px-shade: var(--color-coral-700);
+  }
+
+  .surface-azure {
+    background-color: var(--color-azure-500);
+    --px-hi: var(--color-azure-300);
+    --px-shade: var(--color-azure-700);
+  }
+
+  .surface-grass {
+    background-color: var(--color-grass-500);
+    --px-hi: var(--color-grass-300);
+    --px-shade: var(--color-grass-600);
+  }
+
+  .surface-mute {
+    background-color: var(--color-mute-400);
+    --px-hi: var(--color-mute-300);
+    --px-shade: var(--color-mute-500);
+    --px-c: var(--color-ink-500);
+    color: var(--color-ink-500);
+  }
+
+  /* Корпус табло (HUD, баннер результата): сиреневый пластик вокруг экрана */
+  .surface-board {
+    background-color: var(--color-board-frame);
+    --px-hi: var(--color-board-frame-hi);
+    --px-shade: var(--color-board-frame-shade);
+  }
+
+  /*
+   * Белый текст с пиксельным контуром чернилами (8 направлений, без blur) +
+   * жёсткая тень снизу — заголовки поверх арта стадиона.
+   */
+  .text-outline {
+    --outline: 6px;
+    color: #fff;
+    text-shadow:
+      var(--outline) 0 0 var(--color-ink),
+      calc(-1 * var(--outline)) 0 0 var(--color-ink),
+      0 var(--outline) 0 var(--color-ink),
+      0 calc(-1 * var(--outline)) 0 var(--color-ink),
+      var(--outline) var(--outline) 0 var(--color-ink),
+      calc(-1 * var(--outline)) var(--outline) 0 var(--color-ink),
+      var(--outline) calc(-1 * var(--outline)) 0 var(--color-ink),
+      calc(-1 * var(--outline)) calc(-1 * var(--outline)) 0 var(--color-ink),
+      0 calc(var(--outline) * 2.6) 0 rgb(42 46 82 / 0.3);
+  }
+
+  /* Полоса-шарф WKS: зелёный / белый / красный / белый */
+  .scarf {
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--color-wks-green) 0 28px,
+      #fff 28px 36px,
+      var(--color-wks-red) 36px 64px,
+      #fff 64px 72px
+    );
+  }
+
+  /* Та же полоса, крупным шагом — для шарфа-шторки на весь экран (ScarfWipe) */
+  .scarf-lg {
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--color-wks-green) 0 120px,
+      #fff 120px 152px,
+      var(--color-wks-red) 152px 272px,
+      #fff 272px 304px
+    );
+  }
+
+  .pixelated {
+    image-rendering: pixelated;
+  }
+}
+
+/*
+ * Пиксельное мигание — steps(), без плавного fade: стрелка в лобби,
+ * "czeka…", пульс текущего удара на табло.
+ */
+@keyframes px-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.animate-px-blink {
+  animation: px-blink 1s steps(1, end) infinite;
+}
+
+@keyframes px-nudge {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 10px 0;
+  }
+}
+
+.animate-px-nudge {
+  animation: px-nudge 0.8s steps(2, end) infinite;
+}
+
+@keyframes pip-now {
+  50% {
+    background-color: var(--color-gold-500);
+  }
+}
+
+.animate-pip-now {
+  animation: pip-now 1s steps(1, end) infinite;
+}
+
+/* Прыгающий пиксельный мяч — экраны ожидания связи (components/status) */
+@keyframes ball-hop {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -28px;
+  }
+}
+
+.animate-ball-hop {
+  animation: ball-hop 0.6s steps(4, end) infinite;
+}
+
+/*
+ * Шарф-шторка на входе в матч (screens/GameScreen/ui/ScarfWipe) — одна
+ * фирменная анимация на всю игру. steps() — полосы едут "кадрами", как
+ * спрайт, а не плавно.
+ */
+@keyframes scarf-wipe {
+  0% {
+    translate: -110% 0;
+  }
+  40%,
+  55% {
+    translate: 0 0;
+  }
+  100% {
+    translate: 110% 0;
+  }
+}
+
+.animate-scarf-wipe {
+  animation: scarf-wipe 0.9s steps(12, end) both;
+}
+
+/*
+ * Заставка роли в начале раунда (screens/GameScreen/ui/RoleSplash):
+ * выпрыгивает, держится ~1с и исчезает. both + delay из JS — см. коммент
+ * про fill-mode выше (баннер результата).
+ */
+@keyframes role-splash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+  22%,
+  82% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.animate-role-splash {
+  animation: role-splash 1.6s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+
 /*
  * Kiosk-режим (см. shared/put_me_in_context.md, раздел 1.2): два сенсорных
  * терминала, дети от 9 лет — никаких случайных выделений текста, контекстных
@@ -253,68 +510,16 @@ body {
   user-select: none;
   -webkit-touch-callout: none;
   touch-action: manipulation;
-  background: #000;
+  background: var(--color-ink);
+  font-family: var(--font-ui);
+  color: var(--color-ink);
 }
 
-/* Тема "стадион": крупная аркадная сетка и scanlines вместо плоской заливки. */
-.pitch-bg {
-  position: relative;
-  isolation: isolate;
-  background-color: var(--color-grass-500);
-  background-image:
-    linear-gradient(rgba(226, 241, 230, 0.2) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(226, 241, 230, 0.2) 1px, transparent 1px),
-    repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0, 0, 0, 0.1) 4px),
-    radial-gradient(120% 90% at 50% 0%, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.3) 100%);
-  background-size: 72px 72px, 72px 72px, auto, auto;
-}
-
-.pitch-bg::before,
-.pitch-bg-dark::before {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  content: "";
-  background-image:
-    url("./assets/pixel-ball.png"),
-    url("./assets/pixel-ball.png"),
-    url("./assets/pixel-ball.png"),
-    url("./assets/pixel-ball.png"),
-    url("./assets/pixel-ball.png"),
-    url("./assets/pixel-ball.png"),
-    url("./assets/pixel-ball.png"),
-    url("./assets/pixel-ball.png"),
-    url("./assets/pixel-ball.png"),
-    url("./assets/pixel-ball.png"),
-    url("./assets/pixel-ball.png"),
-    url("./assets/pixel-ball.png");
-  background-repeat: no-repeat;
-  background-size: 128px 128px;
-  background-position:
-    7% 14%,
-    27% 8%,
-    49% 20%,
-    78% 11%,
-    94% 31%,
-    15% 43%,
-    38% 58%,
-    66% 45%,
-    87% 67%,
-    5% 82%,
-    29% 88%,
-    72% 86%;
-  opacity: 0.22;
-}
-
-.pitch-bg-dark {
-  position: relative;
-  isolation: isolate;
-  background-color: var(--color-grass-700);
-  background-image:
-    linear-gradient(rgba(213, 234, 220, 0.14) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(213, 234, 220, 0.14) 1px, transparent 1px),
-    repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0, 0, 0, 0.14) 4px),
-    radial-gradient(120% 90% at 50% 0%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.38) 100%);
-  background-size: 72px 72px, 72px 72px, auto, auto;
+@media (prefers-reduced-motion: reduce) {
+  .animate-px-blink,
+  .animate-px-nudge,
+  .animate-pip-now,
+  .animate-ball-hop {
+    animation: none;
+  }
 }

@@ -1,68 +1,59 @@
 import { type ButtonHTMLAttributes, type ReactNode } from "react";
-import { type LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
+import { cn } from "./cn";
+import PixelIcon from "./PixelIcon";
 
 interface GameButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart"> {
   children: ReactNode;
-  icon?: LucideIcon;
-  variant?: "primary" | "secondary" | "danger" | "striker" | "keeper" | "terminal";
+  /** Иконка слева от текста — обычно <PixelIcon />. */
+  icon?: ReactNode;
+  variant?: "primary" | "secondary" | "success" | "striker" | "keeper";
   size?: "md" | "lg" | "zone";
-  /** "Выбрано" — золотой outline + лёгкий пульс. Используется зонами удара/защиты. */
+  /** "Выбрано" — золотая рамка, галочка в углу и короткий пульс. Используют зоны удара/защиты и карточки гардероба. */
   selected?: boolean;
+  /** Своя метка в углу выбранной кнопки вместо галочки (например "Założone" в гардеробе); null — без метки. */
+  selectedBadge?: ReactNode;
 }
 
-// Единая тач-кнопка проекта — используют ВСЕ кнопки игры, от "Zacznij grę" до
-// квадратных зон удара/защиты на арене (см. screens/GameScreen/ui/PenaltyScene) —
-// та же rounded-2xl-плитка и то же нижнее "ребро" тени, что и у всех остальных
-// кнопок, просто крупнее и с цифрой вместо текста. 3D-эффект — тень снизу +
-// motion whileTap (уезжает вниз на высоту тени и чуть высветляется), без
-// hover — на планшетах-киосках кликают пальцем.
+const VARIANT_SURFACE = {
+  primary: "surface-gold",
+  secondary: "surface-paper",
+  success: "surface-grass",
+  // Роли на арене: атака — коралл, защита — лазурь (тот же язык, что метки ролей в HUD).
+  striker: "surface-coral",
+  keeper: "surface-azure",
+} as const;
+
+const SIZE_STYLES = {
+  md: "min-h-[88px] px-9 pb-1 text-[32px] gap-4",
+  lg: "min-h-[112px] px-14 pb-1 text-[40px] gap-5",
+  // cqh — растёт вместе с ареной (см. PenaltyScene, [container-type:size]):
+  // зона обязана масштабироваться как часть сцены, а не жить в своих px.
+  zone: "h-[16cqh] w-[16cqh] flex-col gap-0 pb-[0.8cqh]",
+} as const;
+
+// Единая тач-кнопка проекта — от "Zagraj ponownie" до квадратных зон
+// удара/защиты на арене. Пиксельная рамка чернилами, блик сверху, ступень
+// снизу (см. .pix-frame в index.css). Нажатие — CSS (.pix-press): предмет
+// опускается на 6px за 80мс. Без hover — на киоске жмут пальцем.
+//
+// Неактивная кнопка красится в сиреневый surface-mute, а не
+// полупрозрачностью: на пастельном фоне полупрозрачная кнопка читается как
+// "сломалась". Исключение — выбранная (selected) кнопка: после выбора зоны
+// все зоны disabled, но выбранная остаётся в цвете роли, чтобы было видно,
+// что именно выбрано.
 export default function GameButton({
   children,
-  icon: Icon,
+  icon,
   variant = "primary",
   size = "lg",
   selected = false,
-  className = "",
+  selectedBadge,
+  className,
   disabled,
   ...props
 }: GameButtonProps) {
-  const isZone = size === "zone";
-
-  const baseStyles =
-    "relative flex items-center justify-center rounded-2xl border-0 font-[Poppins] font-bold text-[var(--color-ink-900)] select-none cursor-pointer [touch-action:manipulation] disabled:cursor-not-allowed disabled:grayscale-[.6] disabled:brightness-[.7] disabled:opacity-60";
-
-  // Ширина/цвет нижнего "ребра" 3D-тени — своя на вариант, как было исторически.
-  const variantStyles = {
-    primary:
-      "bg-[var(--color-gold-500)] border-b-[7px] border-[var(--color-gold-700)] active:translate-y-[4px] active:border-b-[2px]",
-    secondary:
-      "bg-[var(--color-cream-100)] border-b-[5px] border-[var(--color-cream-300)] active:translate-y-[3px] active:border-b-[2px]",
-    danger:
-      "bg-[var(--color-danger-500)] text-white border-b-[7px] border-[var(--color-danger-700)] active:translate-y-[4px] active:border-b-[2px]",
-    terminal:
-      "min-h-16 rounded-none border-2 border-b-[7px] border-[#8eaf96] border-b-[#1e472d] bg-[#163d27] px-8 font-['Press_Start_2P'] text-sm !text-[#d7e9dc] shadow-[0_0_18px_rgba(142,175,150,0.12)] active:translate-y-1 active:border-b-2 active:border-[#d7e9dc] active:border-b-[#8eaf96] sm:min-h-20 sm:px-12 sm:text-base",
-    // Роли на арене: атака — красный, защита — синий (те же токены, что и везде в проекте).
-    striker: "bg-[var(--color-danger-500)] text-white border-[var(--color-danger-700)] border-b-[8px]",
-    keeper: "bg-[var(--color-sky-500)] text-white border-[var(--color-sky-700)] border-b-[8px]",
-  };
-
-  const shapeStyles = isZone ? "flex-col gap-0" : "gap-3";
-
-  const sizeStyles = {
-    md: "min-h-[var(--size-tap-min)] px-6 py-2.5 text-lg",
-    lg: "min-h-[var(--size-tap-min)] px-12 py-4 text-2xl",
-    // cqh — растёт вместе с ареной (см. PenaltyScene, [container-type:size]),
-    // а не фиксированный px: на арене зона обязана масштабироваться как
-    // часть сцены, иначе разъедется с воротами на другом экране.
-    zone: "h-[16cqh] w-[16cqh] min-h-[76px] min-w-[76px] text-[4cqh]",
-  } as const;
-
-  const iconSize = size === "md" ? 20 : 26;
-
-  // Outline (не box-shadow/border) — независимое CSS-свойство, ложится поверх
-  // формы и цвета варианта без борьбы за порядок классов в className.
-  const selectedStyles = selected ? "outline outline-[0.4em] outline-offset-2 outline-[var(--color-gold-500)] brightness-110 saturate-125" : "";
+  const muted = disabled && !selected;
 
   return (
     <motion.button
@@ -71,24 +62,40 @@ export default function GameButton({
       onContextMenu={(event) => event.preventDefault()}
       initial={false}
       animate={{ scale: selected ? [1, 1.06, 1] : 1 }}
-      whileTap={disabled ? undefined : { y: isZone ? 6 : 4, filter: "brightness(1.2)" }}
       transition={{ duration: 0.26, ease: [0.2, 1.5, 0.4, 1] }}
-      className={`${baseStyles} ${shapeStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${selectedStyles} ${className}`}
+      className={cn(
+        "pix-frame pix-raised pix-press relative flex cursor-pointer select-none items-center justify-center font-ui font-bold leading-none text-ink [touch-action:manipulation] disabled:cursor-not-allowed",
+        muted ? "surface-mute" : VARIANT_SURFACE[variant],
+        SIZE_STYLES[size],
+        selected && "outline-8 outline-offset-8 outline-gold-500",
+        className,
+      )}
       {...props}
     >
-      {Icon && <Icon size={iconSize} strokeWidth={2.5} />}
-      {isZone ? children : <span>{children}</span>}
+      {icon}
+      {children}
+      {selected &&
+        selectedBadge !== null &&
+        (selectedBadge !== undefined ? (
+          <span className="absolute -right-3.5 -top-[26px]" aria-hidden="true">
+            {selectedBadge}
+          </span>
+        ) : (
+          <span className="pix-frame surface-gold absolute -right-7 -top-7 grid h-14 w-14 place-items-center" aria-hidden="true">
+            <PixelIcon name="check" scale={5} />
+          </span>
+        ))}
     </motion.button>
   );
 }
 
 // Как использовать:
-// <GameButton onClick={onPlay} icon={CircleDot} aria-label="Graj">
-//   Zacznij grę
+// <GameButton onClick={onPlay} icon={<PixelIcon name="reload" scale={5} />}>
+//   Zagraj ponownie
 // </GameButton>
 //
 // Квадратная зона на арене:
 // <GameButton size="zone" variant="striker" selected={myZone === 1} onClick={...}>
-//   <span className="text-[4.6cqh] leading-none">1</span>
-//   <span className="text-[1.6cqh] font-normal tracking-[0.1em] opacity-90">2 PKT</span>
+//   <span className="font-display text-[9.6cqh] leading-[0.8]">1</span>
+//   <span className="text-[2.2cqh]">2 PKT</span>
 // </GameButton>

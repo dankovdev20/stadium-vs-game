@@ -21,7 +21,9 @@ export function usePlayAgainModal() {
       closeButton: false,
       pauseOnHover: false,
       onClose: () => setIsOpen(false),
-      className: "!bg-white !p-0 !max-w-2xl !w-[calc(100vw-2rem)] sm:!w-[min(42rem,calc(100vw-3rem))] shadow-2xl overflow-hidden mt-8 sm:mt-12",
+      // Тост — только транспорт: вся рамка/фон у самой модалки (пиксельная
+      // панель), поэтому обёртку toastify делаем прозрачной и без отступов.
+      className: "!bg-transparent !p-0 !shadow-none !rounded-none !overflow-visible !min-h-0 !max-h-none !w-fit !max-w-none !mx-auto !mt-4",
     });
   }, []);
 

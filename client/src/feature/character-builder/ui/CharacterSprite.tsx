@@ -32,9 +32,17 @@ export default function CharacterSprite({ character, size = "lg" }: CharacterSpr
   const body = getOptionById(BODY_OPTIONS, character.bodyId);
   const legs = getOptionById(LEGS_OPTIONS, character.legsId);
 
+  // Пиксель-арт (PNG-слои, см. CharacterOption.sprite) включается сам, как
+  // только у всех трёх выбранных частей есть sprite; до тех пор — SVG.
+  const layers = head.sprite && body.sprite && legs.sprite ? [legs.sprite, body.sprite, head.sprite] : null;
+
   return (
-    <div className={`drop-shadow-[0_8px_10px_rgba(0,0,0,0.4)] ${DIMS[size]}`}>
-      <PlayerCharacter head={head} body={body} legs={legs} className="h-full w-full" />
+    <div className={`relative drop-shadow-[0_8px_0_rgb(42_46_82/0.18)] ${DIMS[size]}`}>
+      {layers ? (
+        layers.map((src) => <img key={src} src={src} alt="" className="pixelated absolute inset-0 h-full w-full object-contain" />)
+      ) : (
+        <PlayerCharacter head={head} body={body} legs={legs} className="h-full w-full" />
+      )}
     </div>
   );
 }

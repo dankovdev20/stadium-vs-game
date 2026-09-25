@@ -10,7 +10,10 @@ import { useGameState, useGamePhase, useConnectionStatus } from "./game/GameCont
 import ConnectionOverlay from "./components/status/ConnectionOverlay";
 import DisconnectBanner from "./components/status/DisconnectBanner";
 import SpectatorScreen from "./components/status/SpectatorScreen";
-import { DevPanel } from "./dev/devPanel";
+// Раскомментировать вместе с <DevPanel /> ниже (неиспользуемый импорт ломал `npm run build`).
+// import { DevPanel } from "./dev/devPanel";
+import Panel from "./components/ui/Panel";
+import { useKioskScaleCssVar } from "./components/layout/kioskScale";
 
 
 export default function App() {
@@ -18,6 +21,9 @@ export default function App() {
   const { myRole, resetEpoch } = useGameState();
   const { restoring, connectCount } = useConnectionStatus();
   const { showPlayAgainModal, hidePlayAgainModal, isOpen } = usePlayAgainModal();
+  // Слои вне сцены 1920×1080 (тост финала, оверлей связи, баннер обрыва)
+  // масштабируются той же величиной, что и сама сцена.
+  useKioskScaleCssVar();
 
   // Kiosk-режим: без контекстного меню на долгом тапе/правом клике (см. index.css).
   useEffect(() => {
@@ -48,18 +54,13 @@ export default function App() {
       {isSpectator && <SpectatorScreen />}
       {!isSpectator && phase === "CUSTOMIZATION" && <CustomizationScreen />}
       {!isSpectator && (phase === "PLAYING" || phase === "ROUND_RESULT") && <GameScreen />}
-      {!isSpectator && phase === "GAME_OVER" && (
-        <ScreenShell tone="dark">
-          <div className="flex min-h-[100dvh] items-center justify-center">
-            <p className="font-[Poppins] font-semibold text-white/90">Koniec meczu...</p>
-          </div>
-        </ScreenShell>
-      )}
+      {/* Финал — модалка-тост (PlayAgainModal); под ней тот же стадион. */}
+      {!isSpectator && phase === "GAME_OVER" && <ScreenShell />}
       {phase === "PAUSED_DISCONNECT" && (
-        <ScreenShell tone="dark">
-          <div className="flex min-h-[100dvh] items-center justify-center">
-            <p className="font-[Poppins] text-xl font-bold text-[var(--color-danger-500)]">Rywal się rozłączył...</p>
-          </div>
+        <ScreenShell>
+          <Panel className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-20 pb-12 pt-10">
+            <p className="font-display text-[96px] uppercase leading-[0.85]">Rywal się rozłączył…</p>
+          </Panel>
         </ScreenShell>
       )}
 
@@ -69,7 +70,7 @@ export default function App() {
      {/*  <DevPanel /> */}
 
       <div
-        className={`fixed inset-0 z-40 bg-black/20 backdrop-blur-sm transition-opacity duration-300 pointer-events-none ${
+        className={`pointer-events-none fixed inset-0 z-40 bg-ink/35 transition-opacity duration-300 ${
           isOpen ? "opacity-100" : "opacity-0"
         }`}
         aria-hidden="true"

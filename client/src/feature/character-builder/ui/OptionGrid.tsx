@@ -11,9 +11,9 @@ interface OptionGridProps {
   disabled?: boolean;
 }
 
-// Сетка карточек активной категории. Смена таба лёгким fade+slide
-// (без bounce — переключение вкладок должно ощущаться быстрым, а не
-// "пружинистым", в отличие от самого выбора варианта в OptionTile).
+// Сетка 3×2 карточек активной категории. Смена вкладки — лёгкий
+// fade+slide (без пружины: переключение вкладок должно ощущаться быстрым,
+// в отличие от самого выбора варианта в OptionTile).
 export default function OptionGrid({ category, options, selectedId, onSelect, disabled = false }: OptionGridProps) {
   return (
     <AnimatePresence mode="wait">
@@ -21,8 +21,9 @@ export default function OptionGrid({ category, options, selectedId, onSelect, di
         key={category}
         initial={{ opacity: 0, x: 12 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.2 }}
-        className="grid flex-1 grid-cols-2 grid-rows-3 gap-4 overflow-y-auto p-2"
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18 }}
+        className="grid grid-cols-3 gap-x-6 gap-y-6"
       >
         {options.map((option) => (
           <OptionTile
@@ -30,6 +31,7 @@ export default function OptionGrid({ category, options, selectedId, onSelect, di
             category={category}
             option={option}
             selected={selectedId === option.id}
+            disabled={disabled}
             onSelect={() => !disabled && onSelect(option.id)}
           />
         ))}

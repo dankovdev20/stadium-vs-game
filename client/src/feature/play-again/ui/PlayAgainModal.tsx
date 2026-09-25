@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
-import { Trophy, RotateCcw, Check, Hourglass } from "lucide-react";
+import confetti from "canvas-confetti";
 import GameButton from "../../../components/ui/Button";
+import PixelIcon from "../../../components/ui/PixelIcon";
+import ScarfStripe from "../../../components/ui/ScarfStripe";
+import SegmentCountdown from "../../../components/ui/SegmentCountdown";
+import Tag from "../../../components/ui/Tag";
 import { useGameEmit, useGameState } from "../../../game/GameContext";
 import type { PlayerRole } from "../../../game/types";
 
 const RESTART_VOTE_TIMEOUT_SEC = 10;
 
-const WINNER_LABELS: Record<PlayerRole | "REMIS", string> = {
-  player_1: "Gracz 1",
-  player_2: "Gracz 2",
-  REMIS: "Remis",
-};
+const ROLE_LABELS: Record<PlayerRole, string> = { player_1: "Gracz 1", player_2: "Gracz 2" };
+const ROLES: PlayerRole[] = ["player_1", "player_2"];
 
 function winnerFromScores(scores: { player_1: number; player_2: number }): PlayerRole | "REMIS" {
   if (scores.player_1 === scores.player_2) return "REMIS";
@@ -20,6 +21,10 @@ function winnerFromScores(scores: { player_1: number; player_2: number }): Playe
 // Самодостаточный компонент: сам читает GameContext (а не получает снэпшот
 // пропсами), поэтому обратный отсчёт и счётчик голосов обновляются вживую
 // по мере прихода state:sync, даже пока тост уже открыт.
+//
+// Финал — праздник для обоих: итоговый счёт, победитель в золоте, тёплая
+// фраза и проигравшему (никаких красных кубков), реванш одной кнопкой.
+// Таймер голосования — 10 сегментов, каждую секунду гаснет один.
 export default function PlayAgainModal() {
   const emit = useGameEmit();
   const { lastGameOver, myRole, sync } = useGameState();
@@ -39,14 +44,23 @@ export default function PlayAgainModal() {
   // game:over приходит один раз — после F5/реконнекта на GAME_OVER его уже
   // не будет, поэтому победителя можно вывести из счёта в state:sync.
   const winner = lastGameOver?.winner ?? (sync ? winnerFromScores(sync.scores) : null);
+  const isWinner = !!winner && winner !== "REMIS" && winner === myRole;
+
+  // Конфетти победителю — один раз на открытие модалки.
+  useEffect(() => {
+    if (!isWinner) return;
+    const colors = ["#0f8a45", "#ffffff", "#d7282f", "#ffc93c"];
+    confetti({ particleCount: 120, spread: 100, startVelocity: 45, origin: { x: 0.5, y: 0.35 }, shapes: ["square"], colors });
+  }, [isWinner]);
+
   if (!winner) return null;
 
-  const isWinner = winner !== "REMIS" && winner === myRole;
-  const winnerName = WINNER_LABELS[winner];
+  const scores = lastGameOver?.scores ?? sync?.scores ?? { player_1: 0, player_2: 0 };
+  const isDraw = winner === "REMIS";
+  const title = isDraw ? "Remis!" : `Wygrywa ${ROLE_LABELS[winner]}!`;
+  const message = isDraw ? "Remis! Kto wygra rewanż?" : isWinner ? "Brawo! Mistrzowski mecz!" : "Świetna gra! Rewanż?";
 
   const myReady = myRole === "player_1" ? restart?.player_1_ready : restart?.player_2_ready;
-  const readyCount = (restart?.player_1_ready ? 1 : 0) + (restart?.player_2_ready ? 1 : 0);
-  const progressPct = Math.max(0, Math.min(100, (remainingSec / RESTART_VOTE_TIMEOUT_SEC) * 100));
 
   const handleTap = () => {
     if (myReady) return;
@@ -55,72 +69,68 @@ export default function PlayAgainModal() {
 
   return (
     <section
-      className="w-full border-4 border-[#587a63] bg-[#020a06] p-2 text-[#b8d0bc] shadow-[10px_10px_0_rgba(0,0,0,0.55)] sm:p-3"
+      className="pix-frame pix-frame-lg surface-paper grid w-[1000px] justify-items-center font-ui text-ink [--px-depth:8px] [--px-drop:14px]"
+      style={{ zoom: "var(--kiosk-scale, 1)" }}
       data-testid="play-again-modal"
     >
-      <div className="flex h-12 items-center justify-between border-2 border-[#b8d0bc] bg-[#0b2418] px-3 font-['Press_Start_2P'] text-[11px] uppercase leading-none sm:h-14 sm:px-4 sm:text-xs">
-        <span>GAME_OVER.EXE</span>
-        <div className="flex items-center gap-1" aria-hidden="true">
-          <span className="flex h-7 w-7 items-center justify-center border border-[#b8d0bc] bg-[#163d27] text-xs">_</span>
-          <span className="flex h-7 w-7 items-center justify-center border border-[#b8d0bc] bg-[#163d27] text-xs">□</span>
-          <span className="flex h-7 w-7 items-center justify-center border border-[#d7e9dc] bg-[#a33b3b] text-xs">×</span>
-        </div>
-      </div>
+      <ScarfStripe className="h-20 shadow-[0_4px_0_0_var(--color-ink)]" />
+      <Tag className="-mt-[60px] px-8 pb-3 pt-2 font-display text-[60px] font-normal uppercase">Koniec meczu</Tag>
 
-      <div className="m-2 border-2 border-[#587a63] bg-[#07180e] px-5 pb-6 pt-6 sm:m-4 sm:px-10 sm:pb-8 sm:pt-8">
-      
-        <div className="flex flex-col items-center pt-7">
-          <h2 className="font-['Press_Start_2P'] text-center text-xl uppercase leading-relaxed text-[#b8d0bc] drop-shadow-[3px_3px_0_#163d27] sm:text-3xl">
-            KONIEC MECZU
-          </h2>
-          <div className="mt-7 flex items-center gap-5">
-            <div
-              className={`flex h-24 w-24 items-center justify-center border-4 border-solid ${
-                isWinner ? "border-[#d7e9dc] bg-[#2f8f4e]" : "border-[#f0b4b4] bg-[#a33b3b]"
-              }`}
-            >
-              <Trophy size={42} color="#ffffff" strokeWidth={2.5} />
-            </div>
-          </div>
-          <p className="mt-6 font-['Press_Start_2P'] text-xs uppercase text-[#8eaf96] sm:text-sm">Zwycięzca:</p>
-          <p className="mb-6 mt-3 font-['Press_Start_2P'] text-lg uppercase text-white sm:text-xl">{winnerName}</p>
+      <div className="grid justify-items-center gap-[18px] px-14 pb-11 pt-5">
+        <PixelIcon name="trophy" scale={9} />
+        <h2 className="font-display text-[104px] font-normal uppercase leading-[0.85]">{title}</h2>
+        <p className="text-[34px] font-semibold text-ink-700">{message}</p>
 
-          <GameButton
-            onClick={handleTap}
-            icon={myReady ? Check : RotateCcw}
-            disabled={myReady}
-            size="md"
-            variant="terminal"
-            aria-label="Graj ponownie"
-          >
-            {myReady ? "Gotowy! Czekamy na rywala..." : "Graj ponownie"}
-          </GameButton>
-
-          <div className="mt-7 flex items-center gap-2 font-['Press_Start_2P'] text-[10px] uppercase text-[#b8d0bc] sm:text-xs">
-            {[0, 1].map((i) => (
+        <div className="mt-1.5 flex items-center gap-9">
+          {ROLES.map((role, i) => (
+            <div key={role} className="contents">
+              {i > 0 && <span className="font-display text-[100px] leading-none">:</span>}
               <div
-                key={i}
-                className={`h-6 w-8 border-2 border-solid ${
-                  i < readyCount ? "border-[#b8d0bc] bg-[#24643a]" : "border-[#405d47] bg-[#0d2013]"
+                className={`pix-frame grid w-[250px] justify-items-center pb-[18px] pt-3.5 [--px-depth:8px] ${
+                  winner === role ? "surface-gold" : "surface-white"
                 }`}
-              />
-            ))}
-            <span className="ml-2">{readyCount}/2 GOTOWYCH</span>
-          </div>
+              >
+                <span className="text-[28px] font-bold uppercase">
+                  {ROLE_LABELS[role]}
+                  {role === myRole && " · Ty"}
+                </span>
+                <span className="font-display text-[120px] leading-[0.8]">{scores[role]}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <GameButton
+          onClick={handleTap}
+          icon={<PixelIcon name={myReady ? "check" : "reload"} scale={5} />}
+          variant={myReady ? "success" : "primary"}
+          disabled={myReady}
+          selected={!!myReady}
+          selectedBadge={null}
+          aria-label="Graj ponownie"
+          className="mt-3.5 w-[680px] uppercase"
+        >
+          {myReady ? "Gotowy! Czekamy…" : "Zagraj ponownie"}
+        </GameButton>
+
+        <div className="mt-2.5 flex gap-7">
+          {ROLES.map((role) =>
+            restart?.[`${role}_ready`] ? (
+              <Tag key={role} tone="grass">
+                <PixelIcon name="check" scale={4} /> {ROLE_LABELS[role]} gotowy
+              </Tag>
+            ) : (
+              <Tag key={role} tone="dashed">
+                {ROLE_LABELS[role]} czeka<span className="animate-px-blink">…</span>
+              </Tag>
+            ),
+          )}
         </div>
 
         {deadline && (
-          <div className="mt-7 border-2 border-[#b8d0bc] bg-white p-2 text-[#102a19]">
-            <div className="flex items-center justify-between border-2 border-[#102a19] px-3 py-3 font-['Press_Start_2P'] text-[10px] uppercase sm:text-xs">
-              <span className="inline-flex items-center gap-3"><Hourglass size={16} /> CZAS NA RESTART</span>
-              <span>{remainingSec}s</span>
-            </div>
-            <div className="mt-2 h-5 border-2 border-[#102a19] bg-[#c9e0cc] p-1">
-              <div
-                className="h-full bg-[#24643a] transition-[width] duration-200 ease-linear"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
+          <div className="mt-1.5 flex items-center gap-[18px]">
+            <SegmentCountdown total={RESTART_VOTE_TIMEOUT_SEC} lit={remainingSec} />
+            <span className="font-display text-[56px] leading-none">{remainingSec} s</span>
           </div>
         )}
       </div>

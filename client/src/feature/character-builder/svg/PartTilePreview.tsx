@@ -31,6 +31,9 @@ export default function PartTilePreview({ category, option, className = "" }: Pa
   const prefix = `${uid}-t`;
   const variants = VARIANTS[category];
   const Geometry = variants[option.variant] ?? Object.values(variants)[0];
+
+  // Заготовка под пиксель-арт: готовая PNG-карточка детали (см. CharacterOption.thumb).
+  if (option.thumb) return <img src={option.thumb} alt="" className={`pixelated object-contain ${className}`} />;
   const fills: PartFills = { primary: `url(#${prefix}-p)`, accent: `url(#${prefix}-a)`, metal: `url(#${prefix}-m)` };
 
   return (
