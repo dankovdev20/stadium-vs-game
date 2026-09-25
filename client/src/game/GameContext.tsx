@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useReducer, useRef, useState } fr
 import { gameReducer } from "./gameReducer";
 import { createConnection } from "../services/connection";
 import type { GameConnection } from "../services/connection/types";
-import { type GameState, type ServerAction, type GamePhase, initialGameState } from "./types";
+import { type GameState, type ServerAction, type GamePhase, type RoleAssignedPayload, initialGameState } from "./types";
 import { clearSession, loadSession, saveSession } from "./session";
 
 const EVENT_TYPES = [
@@ -27,7 +27,7 @@ interface ConnectionStatus {
 }
 
 const GameStateContext = createContext<GameState | null>(null);
-const GameEmitContext = createContext<((event: string, payload?: any) => void) | null>(null);
+const GameEmitContext = createContext<((event: string, payload?: unknown) => void) | null>(null);
 const ConnectionStatusContext = createContext<ConnectionStatus>({ connected: false, restoring: false, connectCount: 0, usingMock: true });
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
@@ -37,7 +37,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   // ⚠️ лениво, а не в аргументе useRef — иначе createConnection() дёргается на каждый рендер
   const connectionRef = useRef<GameConnection | null>(null);
-  if (!connectionRef.current) {
+  if (connectionRef.current == null) {
     connectionRef.current = createConnection();
   }
 
@@ -52,9 +52,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Побочные эффекты вокруг сессии живут здесь, а не в редьюсере (он чистый).
-    const beforeDispatch: Partial<Record<(typeof EVENT_TYPES)[number], (payload?: any) => any>> = {
+    const beforeDispatch: Partial<Record<(typeof EVENT_TYPES)[number], (payload?: unknown) => unknown>> = {
       "role:assigned": (payload) => {
-        if (payload?.sessionToken) saveSession({ role: payload.role, sessionToken: payload.sessionToken });
+        const assigned = payload as RoleAssignedPayload | undefined;
+        if (assigned?.sessionToken) saveSession({ role: assigned.role, sessionToken: assigned.sessionToken });
         stopRestoring();
         return payload;
       },
@@ -63,17 +64,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         return payload;
       },
       "room:error": (payload) => {
-        if (payload?.code === "RECONNECT_FAILED") {
+        if ((payload as GameState["lastError"] | undefined)?.code === "RECONNECT_FAILED") {
           clearSession();
           stopRestoring();
         }
         return payload;
       },
-      "room:player_disconnected": (payload) => payload && { ...payload, receivedAt: Date.now() },
+      "room:player_disconnected": (payload) => payload && { ...(payload as object), receivedAt: Date.now() },
     };
 
     const domainHandlers = EVENT_TYPES.map((type) => {
-      const handler = (payload?: any) => {
+      const handler = (payload?: unknown) => {
         const prepared = beforeDispatch[type] ? beforeDispatch[type]!(payload) : payload;
         dispatch({ type, payload: prepared } as ServerAction);
       };
@@ -100,8 +101,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       connection.emit("player:reconnect", session);
     };
     const onDisconnect = () => setStatus((s) => ({ ...s, connected: false }));
-    const onConnectError = (err: any) =>
-      setStatus((s) => ({ ...s, connected: false, lastError: err?.message ?? String(err) }));
+    const onConnectError = (err?: unknown) =>
+      setStatus((s) => ({ ...s, connected: false, lastError: (err as { message?: string } | undefined)?.message ?? String(err) }));
 
     connection.on("connect", onConnect);
     connection.on("disconnect", onDisconnect);
@@ -118,7 +119,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const emit = (event: string, payload?: any) => connectionRef.current!.emit(event, payload);
+  const emit = (event: string, payload?: unknown) => connectionRef.current!.emit(event, payload);
 
   return (
     <GameStateContext.Provider value={state}>

@@ -1,15 +1,14 @@
 import { motion } from "motion/react";
 import gameBall from "../../../assets/GameBall.png";
 import type { RoundResolvedPayload } from "../../../game/types";
-import { STRIKER_SPOT } from "../model/zoneLayout";
-import { buildBallChoreography, BALL_TIMES } from "../model/reveal";
+import { buildBallChoreography, BALL_START, BALL_TIMES } from "../model/reveal";
 
 interface BallProps {
   /** Результат раунда; передаётся только в фазе ROUND_RESULT. */
   result: RoundResolvedPayload | null;
 }
 
-const IDLE_POS = { x: STRIKER_SPOT.x + 4, y: STRIKER_SPOT.y - 6 };
+const IDLE_POS = BALL_START; // та же точка, откуда стартует полёт — мяч не "прыгает" в момент удара
 
 // Полёт мяча — единая хореография из model/reveal.ts (5 опорных точек:
 // старт → старт-хелд → апекс → точка касания → точка успокоения), больше

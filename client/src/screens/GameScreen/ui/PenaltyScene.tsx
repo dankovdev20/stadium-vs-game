@@ -107,10 +107,13 @@ export default function PenaltyScene({ strikerCharacter, keeperCharacter, isStri
         {/* Эффект момента удара — вспышка/кольцо/искры в точке касания, синхронизировано с полётом мяча */}
         {result && choreography && <ImpactFX choreography={choreography} roundKey={result.round} />}
 
-        {/* Персонаж у мяча (роль striker) */}
+        {/* Персонаж у мяча (роль striker). Камера — за его спиной, мяч лежит
+            ДАЛЬШЕ от камеры, чем ноги: поэтому нападающий рисуется ПОВЕРХ мяча
+            (z-[6] > мяч z-[4]/z-[5]) и ноги частично закрывают мяч. Вратарь
+            остаётся ПОД мячом (z-[2]) — на сейве мяч должен быть перед ним. */}
         <div
           key={`striker-${strikerCharacter.headId}-${strikerCharacter.bodyId}-${strikerCharacter.legsId}-${isStriker}`}
-          className="animate-character-enter absolute z-[3]"
+          className="animate-character-enter absolute z-[6]"
           style={{ left: `${STRIKER_SPOT.x}%`, top: `${STRIKER_SPOT.y}%` }}
         >
           <StrikerFigure character={strikerCharacter} isMe={isStriker} result={result} />

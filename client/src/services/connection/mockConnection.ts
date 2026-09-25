@@ -1,7 +1,7 @@
-import { type GameConnection } from "./types";
+import { type EventHandler, type GameConnection } from "./types";
 import type { StateSyncPayload, PlayerRole, CharacterSelection } from "../../game/types";
 
-type Handler = (payload?: any) => void;
+type Handler = EventHandler;
 
 const RESTART_VOTE_TIMEOUT_MS = 10000;
 // Заглушка для персонажа "соперника", которого эмулирует мок (см. selectRole).
@@ -45,14 +45,14 @@ class MockConnection implements GameConnection {
     this.listeners.get(event)?.delete(handler);
   }
 
-  emit(event: string, payload?: any) {
+  emit(event: string, payload?: unknown) {
     console.log("[mock] emit:", event, payload);
-    if (event === "player:select_role") return this.selectRole(payload);
-    if (event === "character:submit") return this.submitCharacter(payload);
-    if (event === "game:choose_zone") return this.chooseZone(payload);
+    if (event === "player:select_role") return this.selectRole(payload as PlayerRole);
+    if (event === "character:submit") return this.submitCharacter(payload as CharacterSelection);
+    if (event === "game:choose_zone") return this.chooseZone(payload as number);
     if (event === "game:restart") return this.restart();
     if (event === "room:force_reset") return this.hardReset();
-    if (event === "player:reconnect") return this.reconnect(payload);
+    if (event === "player:reconnect") return this.reconnect(payload as { role?: PlayerRole } | undefined);
   }
 
   // Мок живёт в памяти вкладки и умирает вместе с F5 — сессию после
@@ -203,7 +203,7 @@ class MockConnection implements GameConnection {
     this.trigger("state:sync", { ...this.sync });
   }
 
-  private trigger(event: string, payload?: any) {
+  private trigger(event: string, payload?: unknown) {
     this.listeners.get(event)?.forEach((h) => h(payload));
   }
 }

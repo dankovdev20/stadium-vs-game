@@ -53,7 +53,13 @@ export interface BallChoreography {
   presentation: OutcomePresentation;
 }
 
-const BALL_START: Point = { x: STRIKER_SPOT.x + 4, y: STRIKER_SPOT.y - 6 };
+/**
+ * Где лежит мяч до удара (и откуда стартует полёт) — у правой ноги
+ * нападающего, чуть дальше от камеры. Нападающий рисуется поверх мяча (см.
+ * PenaltyScene), и при +6% по X его нога закрывает примерно треть мяча:
+ * мяч "за ногами", но ребёнок его видит. При +4% нога закрывала почти весь мяч.
+ */
+export const BALL_START: Point = { x: STRIKER_SPOT.x + 6, y: STRIKER_SPOT.y - 6 };
 
 function zoneSide(zone: ZoneId): -1 | 0 | 1 {
   const point = ZONE_POINT[zone];

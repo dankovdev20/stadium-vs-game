@@ -18,5 +18,14 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // GameContext.tsx держит провайдер и хуки к нему в одном файле — так их
+      // импортирует весь клиент. Хуки не компоненты, fast refresh при правке
+      // этого файла просто перезагрузит модуль целиком, это приемлемо.
+      'react-refresh/only-export-components': [
+        'error',
+        { allowExportNames: ['useGameState', 'useGameEmit', 'useConnectionStatus', 'useGamePhase'] },
+      ],
+    },
   },
 ])
