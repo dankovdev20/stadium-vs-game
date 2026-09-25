@@ -12,6 +12,11 @@ const WINNER_LABELS: Record<PlayerRole | "REMIS", string> = {
   REMIS: "Remis",
 };
 
+function winnerFromScores(scores: { player_1: number; player_2: number }): PlayerRole | "REMIS" {
+  if (scores.player_1 === scores.player_2) return "REMIS";
+  return scores.player_1 > scores.player_2 ? "player_1" : "player_2";
+}
+
 // Самодостаточный компонент: сам читает GameContext (а не получает снэпшот
 // пропсами), поэтому обратный отсчёт и счётчик голосов обновляются вживую
 // по мере прихода state:sync, даже пока тост уже открыт.
@@ -31,10 +36,13 @@ export default function PlayAgainModal() {
     return () => clearInterval(id);
   }, [deadline]);
 
-  if (!lastGameOver) return null;
+  // game:over приходит один раз — после F5/реконнекта на GAME_OVER его уже
+  // не будет, поэтому победителя можно вывести из счёта в state:sync.
+  const winner = lastGameOver?.winner ?? (sync ? winnerFromScores(sync.scores) : null);
+  if (!winner) return null;
 
-  const isWinner = lastGameOver.winner !== "REMIS" && lastGameOver.winner === myRole;
-  const winnerName = WINNER_LABELS[lastGameOver.winner];
+  const isWinner = winner !== "REMIS" && winner === myRole;
+  const winnerName = WINNER_LABELS[winner];
 
   const myReady = myRole === "player_1" ? restart?.player_1_ready : restart?.player_2_ready;
   const readyCount = (restart?.player_1_ready ? 1 : 0) + (restart?.player_2_ready ? 1 : 0);

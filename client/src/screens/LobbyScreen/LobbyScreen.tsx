@@ -1,26 +1,28 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import ScreenShell from "../../components/layout/ScreenShell";
-import { useGameEmit, useGameState } from "../../game/GameContext";
-import type { PlayerRole } from "../../game/types";
+import { useConnectionStatus, useGameEmit, useGameState } from "../../game/GameContext";
+import type { GameState, PlayerRole } from "../../game/types";
 import { motion } from "motion/react";
 
+// App монтирует экран с key={resetEpoch}: после room:hard_reset он
+// пересоздаётся с нуля, и оптимистичный выбор ниже не может "пережить" сброс.
+// Раньше фаза LOBBY до и после сброса была одна и та же, экран не
+// перемонтировался — и терминал, успевший выбрать роль, навсегда показывал
+// её выбранной, хотя на сервере её уже не было (стенд вставал намертво).
 export default function LobbyScreen() {
   const emit = useGameEmit();
   const { sync, myRole, lastError } = useGameState();
+  const { connected } = useConnectionStatus();
 
   // Локальный "оптимистичный" выбор — ставим его СРАЗУ по тапу, не дожидаясь
   // ответа сервера (role:assigned). На тач-стенде это закрывает окно в
-  // несколько кадров, за которое можно успеть тапнуть и по второй роли тоже
-  // (сервер сейчас не запрещает одному сокету занять обе роли).
-  const [pendingRole, setPendingRole] = useState<PlayerRole | null>(null);
-
-  // Если сервер отклонил наш выбор (роль уже занята кем-то другим) — снимаем
-  // локальную блокировку, чтобы игрок мог попробовать снова.
-  useEffect(() => {
-    if (lastError?.code === "ROLE_TAKEN" && !myRole) {
-      setPendingRole(null);
-    }
-  }, [lastError, myRole]);
+  // несколько кадров, за которое можно успеть тапнуть и по второй роли тоже.
+  //
+  // Запоминаем, какая ошибка была на момент тапа: любой НОВЫЙ room:error
+  // (сервер отклонил выбор) автоматически гасит оптимистичный выбор — без
+  // effect'а и без setState в нём, просто производным значением.
+  const [pending, setPending] = useState<{ role: PlayerRole; errorAtTap: GameState["lastError"] } | null>(null);
+  const pendingRole = pending && pending.errorAtTap === lastError ? pending.role : null;
 
   const slots = sync?.slots ?? { player_1_taken: false, player_2_taken: false };
   // Роль, которую этот клиент уже выбрал (подтверждённо или оптимистично) —
@@ -30,11 +32,12 @@ export default function LobbyScreen() {
   const renderSlotButton = (role: PlayerRole, label: string) => {
     const taken = role === "player_1" ? slots.player_1_taken : slots.player_2_taken;
     const isMe = mySelection === role;
-    const disabled = (taken && !isMe) || (mySelection !== null && !isMe);
+    // Без связи тап ушёл бы в никуда, а оптимистичный выбор так и висел бы.
+    const disabled = (taken && !isMe) || (mySelection !== null && !isMe) || !connected;
 
     const handleClick = () => {
-      if (mySelection) return; // защита от повторного/двойного тапа
-      setPendingRole(role);
+      if (mySelection || !connected) return; // защита от повторного/двойного тапа
+      setPending({ role, errorAtTap: lastError });
       emit("player:select_role", role);
     };
 

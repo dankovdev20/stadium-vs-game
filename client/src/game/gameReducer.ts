@@ -5,7 +5,7 @@ export function gameReducer(state: GameState, action: ServerAction): GameState {
     case "state:sync":
       return { ...state, sync: action.payload };
     case "role:assigned":
-      return { ...state, myRole: action.payload!.role };
+      return { ...state, myRole: action.payload.role };
     case "round:choice_made":
       return { ...state, lastChoiceMade: action.payload };
     case "round:resolved":
@@ -14,10 +14,18 @@ export function gameReducer(state: GameState, action: ServerAction): GameState {
       return { ...state, lastGameOver: action.payload };
     case "room:player_disconnected":
       return { ...state, disconnectedInfo: action.payload };
+    case "room:player_reconnected":
+      return state.disconnectedInfo?.role === action.payload.role ? { ...state, disconnectedInfo: null } : state;
     case "room:error":
-      return { ...state, lastError: action.payload };
+      // RECONNECT_FAILED — сервер нашу сессию уже не знает (сброс по таймауту
+      // или рестарт сервера): роль, которую мы помним, больше не наша.
+      return action.payload?.code === "RECONNECT_FAILED"
+        ? { ...state, myRole: null, lastError: action.payload }
+        : { ...state, lastError: action.payload };
     case "room:hard_reset":
-      return { ...initialGameState }; // ⚠️ важно: myRole тоже обнуляется, как требует спека
+      // ⚠️ важно: myRole тоже обнуляется, как требует спека. resetEpoch — единственное,
+      // что переживает сброс (см. types.ts).
+      return { ...initialGameState, resetEpoch: state.resetEpoch + 1 };
     default:
       return state;
   }
