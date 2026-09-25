@@ -1,13 +1,17 @@
 import { useState } from "react";
 import ScreenShell from "../../components/layout/ScreenShell";
 import Panel from "../../components/ui/Panel";
-import { useGameEmit } from "../../game/GameContext";
+import { useGameEmit, useGameState } from "../../game/GameContext";
 import CharacterBuilder from "../../feature/character-builder/ui/CharacterBuilder";
 import type { CharacterSelection } from "../../game/types";
 
 export default function CustomizationScreen() {
   const emit = useGameEmit();
+  const { sync, myRole } = useGameState();
   const [submitted, setSubmitted] = useState(false);
+  // После F5/реконнекта локальный флаг пустой, но сервер уже мог принять
+  // персонажа — тогда кнопка должна остаться в "ожидании", а не звать жать снова.
+  const confirmedOnServer = !!(myRole && sync?.characters[myRole]);
 
   const handleSubmit = (character: CharacterSelection) => {
     setSubmitted(true);
@@ -24,7 +28,7 @@ export default function CustomizationScreen() {
         </Panel>
 
         <div className="min-h-0 flex-1">
-          <CharacterBuilder onSubmit={handleSubmit} disabled={submitted} />
+          <CharacterBuilder onSubmit={handleSubmit} disabled={submitted || confirmedOnServer} />
         </div>
       </div>
     </ScreenShell>

@@ -52,6 +52,17 @@ class MockConnection implements GameConnection {
     if (event === "game:choose_zone") return this.chooseZone(payload);
     if (event === "game:restart") return this.restart();
     if (event === "room:force_reset") return this.hardReset();
+    if (event === "player:reconnect") return this.reconnect(payload);
+  }
+
+  // Мок живёт в памяти вкладки и умирает вместе с F5 — сессию после
+  // перезагрузки он восстановить не может, ведёт себя как сервер после рестарта.
+  private reconnect(payload?: { role?: PlayerRole }) {
+    if (this.myRole && payload?.role === this.myRole) {
+      this.trigger("role:assigned", { role: this.myRole, sessionToken: "mock", reconnected: true });
+      return;
+    }
+    this.trigger("room:error", { code: "RECONNECT_FAILED", message: "Nieprawidłowy token sesji lub pokój został zresetowany." });
   }
 
   private selectRole(role: PlayerRole) {

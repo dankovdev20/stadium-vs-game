@@ -19,6 +19,20 @@
   события из `EVENT_TYPES`, прокидывает их в `gameReducer`, и отдаёт наружу
   четыре хука.
 
+## Реконнект и сбросы (живучесть стенда)
+
+- **`session.ts`** — `sessionToken` из `role:assigned` лежит в
+  `sessionStorage` (на вкладку). `GameContext` на КАЖДЫЙ `connect` шлёт
+  `player:reconnect` с ним — F5 или обрыв сети не убивают матч.
+  Пока ждём ответа, `useConnectionStatus().restoring === true`.
+- `RECONNECT_FAILED` / `room:hard_reset` → сессия стирается, `myRole = null`.
+- `resetEpoch` (растёт на каждый `room:hard_reset`) и `connectCount` —
+  `key` для `LobbyScreen` в `App.tsx`: локальный стейт экрана не переживает
+  сброс. Если заводите локальный `useState` в экране, который может остаться
+  смонтированным через сброс, — вешайте тот же `key`.
+- `components/status/` — оверлей «нет связи», баннер «соперник отвалился»
+  с отсчётом и заглушка «Trwa mecz» для терминала без роли.
+
 ## Как читать состояние в компоненте
 
 ```tsx

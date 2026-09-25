@@ -51,28 +51,42 @@ export interface RoundResolvedPayload {
   scores: { player_1: number; player_2: number };
 }
 
+export interface RoleAssignedPayload {
+  role: PlayerRole;
+  sessionToken: string;
+  reconnected?: boolean;
+}
+
 export interface GameState {
   sync: StateSyncPayload | null;          // последний state:sync целиком
   myRole: PlayerRole | null;               // из role:assigned
   lastChoiceMade: { role: PlayerRole; strikerRole: PlayerRole; keeperRole: PlayerRole } | null;
   lastRoundResult: RoundResolvedPayload | null;
   lastGameOver: { winner: PlayerRole | "REMIS"; scores: { player_1: number; player_2: number } } | null;
-  disconnectedInfo: { role: PlayerRole; timeoutSec: number } | null;
-  lastError: { code: "ROLE_TAKEN" | "ROOM_FULL"; message: string } | null;
+  // receivedAt ставит GameContext в момент прихода события (редьюсер чистый) —
+  // от него баннер считает живой обратный отсчёт до сброса.
+  disconnectedInfo: { role: PlayerRole; timeoutSec: number; receivedAt: number } | null;
+  lastError: { code: "ROLE_TAKEN" | "RECONNECT_FAILED"; message: string } | null;
+  // Растёт на каждый room:hard_reset. App вешает его как key на экраны, чтобы
+  // их локальный стейт (например оптимистичный выбор роли в лобби) гарантированно
+  // умирал вместе со сбросом, даже если фаза до и после сброса одна и та же (LOBBY).
+  resetEpoch: number;
 }
 
 export const initialGameState: GameState = {
   sync: null, myRole: null, lastChoiceMade: null,
   lastRoundResult: null, lastGameOver: null,
   disconnectedInfo: null, lastError: null,
+  resetEpoch: 0,
 };
 
 export type ServerAction =
   | { type: "state:sync"; payload: StateSyncPayload }
-  | { type: "role:assigned"; payload: { role: PlayerRole } }
+  | { type: "role:assigned"; payload: RoleAssignedPayload }
   | { type: "round:choice_made"; payload: GameState["lastChoiceMade"] }
   | { type: "round:resolved"; payload: RoundResolvedPayload }
   | { type: "game:over"; payload: GameState["lastGameOver"] }
   | { type: "room:player_disconnected"; payload: GameState["disconnectedInfo"] }
+  | { type: "room:player_reconnected"; payload: { role: PlayerRole } }
   | { type: "room:hard_reset" }
   | { type: "room:error"; payload: GameState["lastError"] };
