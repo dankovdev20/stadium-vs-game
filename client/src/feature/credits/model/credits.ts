@@ -20,12 +20,10 @@ export interface CreditAsset {
  * настоящие имена и роли, как они должны звучать на стенде.
  */
 export const DEVELOPERS: CreditPerson[] = [
-  { name: "Daniil (Lugaku)", role: "Programowanie, grafika" },
-  { name: "dankov-dev", role: "Programowanie" },
-  { name: "cra1zer2", role: "Programowanie" },
+  { name: "Daniil Ilin", role: "Programowanie, grafika" },
+  { name: "Danyil Chernenko", role: "Programowanie" },
+  // { name: "cra1zer2", role: "Programowanie" }, :(
 ];
-
-export const PARTNERS = ["WKS Śląsk Wrocław", "Roboklocki"];
 
 /** Чужие ассеты, которые требуют или заслуживают указания авторства. */
 export const ASSET_CREDITS: CreditAsset[] = [

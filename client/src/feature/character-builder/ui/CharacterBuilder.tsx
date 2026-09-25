@@ -64,8 +64,8 @@ export default function CharacterBuilder({ onSubmit, disabled = false }: Charact
       </GameButton>
 
       <Panel className="absolute left-[1040px] top-[176px] grid w-[832px] gap-6 p-8">
-        <CategoryTabs active={activeCategory} onChange={setActiveCategory} worn={worn} />
-        <OptionGrid category={activeCategory} options={active.options} selectedId={active.selectedId} onSelect={active.onSelect} disabled={disabled} />
+        <CategoryTabs active={activeCategory} onChange={setActiveCategory} worn={worn} outfit={character} />
+        <OptionGrid category={activeCategory} options={active.options} outfit={character} selectedId={active.selectedId} onSelect={active.onSelect} disabled={disabled} />
         <GameButton
           onClick={() => onSubmit(character)}
           disabled={disabled}

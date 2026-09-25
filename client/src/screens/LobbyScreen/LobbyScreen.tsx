@@ -3,6 +3,7 @@ import ScreenShell from "../../components/layout/ScreenShell";
 import { useConnectionStatus, useGameEmit, useGameState } from "../../game/GameContext";
 import type { GameState, PlayerRole } from "../../game/types";
 import { motion } from "motion/react";
+import BrickStripe from "../../components/brand/BrickStripe";
 import PartnerLogo from "../../components/brand/PartnerLogo";
 import PixelIcon from "../../components/ui/PixelIcon";
 import ScarfStripe from "../../components/ui/ScarfStripe";
@@ -97,10 +98,16 @@ export default function LobbyScreen() {
         transition={{ duration: 0.4, ease: "easeOut" }}
         className="relative h-full w-full"
       >
-        <header className="absolute inset-x-12 top-11 flex items-center justify-between">
-          <PartnerLogo partner="wks" />
+        {/* Сетка 1fr/auto/1fr, а не justify-between: таблички партнёров разной
+            ширины, а название игры обязано стоять ровно по центру экрана. */}
+        <header className="absolute inset-x-12 top-9 grid grid-cols-[1fr_auto_1fr] items-center">
+          <div className="justify-self-start">
+            <PartnerLogo partner="wks" />
+          </div>
           <span className="font-display text-[52px] leading-none tracking-[0.12em] text-ink-700">PENALTY SHOWDOWN</span>
-          <PartnerLogo partner="roboklocki" />
+          <div className="justify-self-end">
+            <PartnerLogo partner="roboklocki" />
+          </div>
         </header>
 
         <h1 className="text-outline absolute inset-x-0 top-[188px] text-center font-display text-[160px] font-normal uppercase leading-none">
@@ -125,7 +132,12 @@ export default function LobbyScreen() {
         <p className="absolute inset-x-0 bottom-[52px] text-center text-[28px] font-bold uppercase tracking-[0.08em] text-ink">
           WKS Śląsk Wrocław × Roboklocki
         </p>
-        <ScarfStripe className="absolute inset-x-0 bottom-0 shadow-[0_-4px_0_0_var(--color-ink)]" />
+        {/* Нижняя полоса: слева шарф WKS, справа кирпичики Roboklocki — стык
+            ровно по центру, под "×" в подписи партнёров. */}
+        <div className="absolute inset-x-0 bottom-0 flex items-end" aria-hidden="true">
+          <ScarfStripe className="flex-1 shadow-[0_-4px_0_0_var(--color-ink)]" />
+          <BrickStripe className="block flex-1" />
+        </div>
 
         {/* Свободный угол — ничего из раскладки лобби не сдвигается */}
         <GameButton size="md" variant="secondary" onClick={() => setCreditsOpen(true)} className="absolute bottom-12 right-12 min-h-[72px] px-7 text-[26px] uppercase">

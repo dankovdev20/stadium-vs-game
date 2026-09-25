@@ -3,7 +3,8 @@ import GameButton from "../../../components/ui/Button";
 import Panel from "../../../components/ui/Panel";
 import ScarfStripe from "../../../components/ui/ScarfStripe";
 import Tag from "../../../components/ui/Tag";
-import { ASSET_CREDITS, CHARACTER_ART, DEVELOPERS, PARTNERS } from "../model/credits";
+import PartnerLogo from "../../../components/brand/PartnerLogo";
+import { ASSET_CREDITS, CHARACTER_ART, DEVELOPERS } from "../model/credits";
 
 // Стенд без присмотра: если ребёнок открыл окно и ушёл — закрываем сами.
 const AUTO_CLOSE_MS = 60_000;
@@ -42,12 +43,9 @@ export default function CreditsDialog({ onClose }: CreditsDialogProps) {
 
           <section className="grid gap-4">
             <h2 className="font-display text-[56px] uppercase leading-none">Partnerzy</h2>
-            <div className="flex flex-wrap gap-6">
-              {PARTNERS.map((partner) => (
-                <Tag key={partner} tone="paper" className="uppercase">
-                  {partner}
-                </Tag>
-              ))}
+            <div className="flex flex-wrap items-center gap-8 pb-2">
+              <PartnerLogo partner="wks" />
+              <PartnerLogo partner="roboklocki" />
             </div>
           </section>
 

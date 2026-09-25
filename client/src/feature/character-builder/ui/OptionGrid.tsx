@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import type { CharacterSelection } from "../../../game/types";
 import type { CharacterOption } from "../model/options";
 import type { BuilderCategory } from "./CategoryTabs";
 import OptionTile from "./OptionTile";
@@ -6,6 +7,7 @@ import OptionTile from "./OptionTile";
 interface OptionGridProps {
   category: BuilderCategory;
   options: CharacterOption[];
+  outfit: CharacterSelection;
   selectedId: number;
   onSelect: (id: number) => void;
   disabled?: boolean;
@@ -15,7 +17,7 @@ interface OptionGridProps {
 // появляется СРАЗУ с коротким fade+slide (key на категории). Раньше старая
 // сетка сначала доигрывала исчезновение (AnimatePresence mode="wait") — тап
 // по вкладке откликался только через ~0.5с, для ребёнка это "не нажалось".
-export default function OptionGrid({ category, options, selectedId, onSelect, disabled = false }: OptionGridProps) {
+export default function OptionGrid({ category, options, outfit, selectedId, onSelect, disabled = false }: OptionGridProps) {
   return (
     <motion.div
       key={category}
@@ -29,6 +31,7 @@ export default function OptionGrid({ category, options, selectedId, onSelect, di
           key={option.id}
           category={category}
           option={option}
+          outfit={outfit}
           selected={selectedId === option.id}
           disabled={disabled}
           onSelect={() => !disabled && onSelect(option.id)}
