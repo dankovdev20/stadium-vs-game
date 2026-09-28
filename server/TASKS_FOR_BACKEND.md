@@ -1,154 +1,35 @@
-# Задачи и заметки для бэкенда (обновлено 2026-09-25)
+# Задачи и заметки для бэкенда (обновлено 2026-09-26)
 
 ## Открытые задачи
 
-Контекст: 2026-09-25 фронт прогнал живые сценарии «как на стенде» против
-`npm start` (реальные сокеты, два фронта на 5173/5174). Всё ниже
-воспроизведено на живом сервере, а не только в теории. Цель — чтобы цикл
-LOBBY → … → LOBBY не рвался ни при дисконнектах, ни при простое, ни при
-кривом вводе. Порядок = приоритет.
-
-Фронт со своей стороны уже сделал (для контекста, от бэка не требует
-ничего нового в контракте): шлёт `player:reconnect` с сохранённым
-`sessionToken` на КАЖДОЕ подключение сокета (F5, авто-переподключение
-socket.io), обрабатывает `room:player_reconnected` и `RECONNECT_FAILED`,
-сбрасывает локальный выбор роли на `room:hard_reset`. Из-за этого реконнект
-теперь реально используется — и пункт 3 ниже стал срабатывать часто.
-
-### 1. [КРИТИЧНО] `hardResetRoom()` не очищает `socket.role` у живых сокетов
-
-**Воспроизведение:** терминал A берёт `player_1` → ждём 90с (idle-сброс)
-или `room:force_reset` → терминал A жмёт `player_2`.
-**Факт:** `room:error ROLE_TAKEN "Masz już przypisaną rolę!"` — роль из
-прошлой сессии «прилипла» к сокету. Хуже: старый сокет с `socket.role =
-'player_1'` может слать `character:submit`/`game:choose_zone` от имени
-НОВОГО игрока, занявшего `player_1` с другого терминала, а его
-`disconnect` пометит нового игрока отключённым (см. п.3).
-**Фикс:** в `hardResetRoom()` пройтись по сокетам и снять роль:
-
-```js
-for (const s of this.io.sockets?.sockets?.values?.() ?? []) s.role = undefined;
-```
-
-(`?.` — чтобы юнит-тесты с фейковым `io` не падали.)
-
-### 2. [КРИТИЧНО] «Зомби»-таймер `nextRound` после сброса вешает комнату
-
-**Воспроизведение:** оба выбрали зоны (`ROUND_RESULT`) → в течение 4с
-приходит любой `hardResetRoom()` (дисконнект-таймаут, `room:force_reset`).
-**Факт:** через 4с `setTimeout(nextRound)` из `resolveRound()` всё равно
-срабатывает: пустая комната (`players = {null, null}`) уходит в
-`PLAYING`, раунд 2. `handleSelectRole` молча выходит (`state !== LOBBY`) —
-**стенд мёртв до ручного сброса/рестарта сервера.** На живом прогоне это
-случилось даже без специального теста — просто сброс попал в окно результата.
-**Фикс:** хранить таймер и гасить его в `hardResetRoom()` (и в `_doRestart()`):
-
-```js
-// resolveRound()
-this.roundTimer = setTimeout(() => { this.roundTimer = null; this.nextRound(); }, 4000);
-// hardResetRoom()
-if (this.roundTimer) { clearTimeout(this.roundTimer); this.roundTimer = null; }
-```
-
-### 3. [КРИТИЧНО] `handleDisconnect` от СТАРОГО сокета сбрасывает живой матч
-
-**Воспроизведение:** игрок переподключился новым сокетом и успешно прислал
-`player:reconnect` → сервер позже замечает смерть старого сокета
-(закрытие вкладки / pingTimeout).
-**Факт:** `handleDisconnect(oldSocket)` видит `socket.role`, ставит
-`isConnected = false` и запускает 10-секундный таймер → `room:hard_reset`,
-хотя игрок на месте с новым сокетом.
-**Фикс:** в начале `handleDisconnect`:
-
-```js
-if (this.players[role].socketId !== socket.id) return; // это уже не актуальный сокет игрока
-```
-
-### 4. [КРИТИЧНО] Невалидная зона роняет процесс сервера
-
-**Воспроизведение:** `socket.emit('game:choose_zone', 'abc')` (или
-`undefined`, `2.5`) от одного игрока + любой валидный выбор от второго.
-**Факт:** `Number('abc')` = `NaN` проходит проверку `zoneId < 1 || zoneId > 5`
-(оба сравнения с NaN — false) → `resolveShot(NaN)` бросает
-`Nieprawidłowa strefa strzału: NaN` внутри обработчика сокета →
-**`node server.js` завершается с кодом 1, стенд умирает целиком.**
-Проверено на копии сервера (порт 3100).
-**Фикс:**
-- в `handleMakeChoice`: `if (!Number.isInteger(zoneId) || zoneId < 1 || zoneId > 5) return;`
-- обработчики в `server.js` обернуть в `try/catch` с логом (одна ошибка
-  логики не должна ронять весь процесс);
-- на стенде запускать под супервизором с автоперезапуском (pm2 /
-  `node --watch` не подходит — нужен именно рестарт при падении), либо
-  хотя бы `process.on('uncaughtException', …)` с логом.
-- заодно валидировать `character:submit`: объект с числовыми
-  `headId/bodyId/legsId`, иначе игнор.
-
-### 5. [КРИТИЧНО] Нет выхода из `PLAYING`, если дети ушли посреди матча
-
-**Воспроизведение:** оба дошли до `PLAYING` и отошли от стенда.
-**Факт:** через 100с всё ещё `PLAYING`, `hard_reset` не приходит —
-idle-таймер намеренно не работает во время матча. Стенд висит, пока кто-то
-не доиграет чужой матч.
-**Предложение:** отдельный, более длинный таймер простоя раунда — например,
-60с без ни одного `game:choose_zone` в текущем раунде → `handleForceReset()`.
-Взводить в `handleCharacterReady` (переход в PLAYING), `nextRound()` и на
-каждый `handleMakeChoice`; гасить в `hardResetRoom()`. «Пауза подумать»
-при этом не страдает — 60с на один тап это много.
-
-### 6. [СРЕДНЕ] Дисконнект в LOBBY держит слот 10с, а UI показывает его свободным
-
-**Воспроизведение:** A берёт `player_1` → закрывает вкладку → B сразу жмёт `player_1`.
-**Факт:** `slots.player_1_taken = false` (по `isConnected`), но
-`handleSelectRole` отвечает `ROLE_TAKEN "Ta rola jest już zajęta!"`,
-потому что у слота ещё есть `sessionToken`. 10 секунд ребёнок жмёт
-«свободную» кнопку и ничего не происходит.
-**Предложение:** в LOBBY матча ещё нет — при `handleDisconnect` в `LOBBY`
-освобождать слот сразу (`this.players[role] = null`, без таймера), либо
-отдавать в `slots` отдельное поле «зарезервирован», чтобы фронт показал
-«Zajęty».
-
-### 7. [СРЕДНЕ] На :3000 раздаётся тестовая панель, а не игра
-
-`express.static('public')` отдаёт `server/public/index.html`. Инструкция
-киоска (`put_me_in_context.md`, раздел 1) открывает именно
-`http://IP:3000`. Для стенда нужно раздавать собранный клиент
-(`client/dist`) — например, `app.use(express.static('../client/dist'))`, а
-тестовую панель перенести на `/debug`. Согласуем при деплое вместе с `.env`.
-
-### 8. [НИЗКИЙ] 90с на конструктор персонажа для двоих
-
-`IDLE_TIMEOUT_MS` отсчитывается от входа в `CUSTOMIZATION` и сбрасывается
-только на `character:submit`. Листание вариантов активностью не считается —
-медленного ребёнка может выкинуть посреди выбора. Предложение: поднять до
-150–180с для `CUSTOMIZATION` (LOBBY можно оставить 90с).
-
-### Тест-кейсы для `server/tests/gameRoom.test.js`
-
-Все пункты выше воспроизводятся в том же стиле, что текущие тесты
-(`mock.timers` + фейковые сокеты). Ожидаемое ПОСЛЕ фикса:
-
-```js
-// 1: после сброса сокет может взять другую роль
-room.handleSelectRole(a, 'player_1'); room.handleForceReset();
-room.handleSelectRole(a, 'player_2'); // -> role:assigned player_2
-
-// 2: сброс во время ROUND_RESULT не оживляет комнату
-/* ...оба выбрали зоны... */ room.handleForceReset(); mock.timers.tick(4000);
-assert.equal(room.state, 'LOBBY');
-
-// 3: disconnect старого сокета после reconnect не трогает игрока
-room.handleReconnect(a2, { sessionToken }); room.handleDisconnect(a); mock.timers.tick(10000);
-assert.equal(room.state, 'PLAYING');
-
-// 4: мусорная зона игнорируется, ничего не бросает
-room.handleMakeChoice(a, NaN); room.handleMakeChoice(a, 2.5);
-assert.equal(room.roundChoices.player_1, null);
-
-// 5: простой в PLAYING -> LOBBY
-/* ...PLAYING... */ mock.timers.tick(60000); assert.equal(room.state, 'LOBBY');
-```
+Нет. Всё из захода 2026-09-25 закрыто (см. ниже). Следующий этап — запуск
+по сети на выставке (IP сервера, `.env`, киоски), обсуждается отдельно.
 
 ## Закрытые задачи
+
+- **[РЕШЕНО // РЕАЛИЗОВАНО 2026-09-26] Пункты 1–8 захода «как на стенде» (2026-09-25).**
+  Контракт событий не менялся. Подробно — `shared/put_me_in_context.md`, РАЗДЕЛ 7, п.11.
+  1. Протухшая роль после сброса: `hardResetRoom()` снимает `socket.role` у живых
+     сокетов; плюс все обработчики берут роль через `GameRoom.roleOf(socket)` —
+     роль засчитывается только если `players[role].socketId === socket.id`.
+  2. Зомби-таймер `nextRound`: хранится в `this.roundTimer`, гасится в
+     `hardResetRoom()` и `_doRestart()`.
+  3. Disconnect старого сокета после реконнекта игнорируется (`roleOf`), а в
+     `handleReconnect` старому живому сокету снимается роль.
+  4. Невалидная зона — `Number.isInteger` + диапазон; `character:submit` —
+     только три целых id (`sanitizeCharacter`). Обработчики в `server.js`
+     обёрнуты в `try/catch`, `uncaughtException` логируется и завершает
+     процесс, `npm start` = супервизор `scripts/supervise.js` с авто-рестартом
+     (проверено `kill -9` — поднимается за 1 с).
+  5. `playIdleTimer` 60 с на раунд без выбора → `handleForceReset()`.
+  6. Disconnect в `LOBBY` сразу освобождает слот.
+  7. На `/` — собранный `client/dist`, тестовая панель — `/debug`. Клиентская
+     prod-сборка без `VITE_WS_URL` подключается к same-origin.
+  8. Отклонено 2026-09-26: в конструкторе мало элементов, 90 с хватает —
+     idle в `CUSTOMIZATION` оставлен 90 с.
+  Тесты: `tests/gameRoom.test.js`, раздел 5 (29/29). Живой прогон реальными
+  сокетами + два браузера на :3100 — все сценарии из описания проходят.
+
 
 - **[РЕШЕНО // РЕАЛИЗОВАНО 2026-09-22] Один сокет мог занять ОБЕ роли в лобби.**
   В `GameRoom.handleSelectRole` (`server/src/gameRoom.js`) добавлена проверка авторизации роли сокета:

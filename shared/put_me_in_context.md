@@ -505,3 +505,32 @@ B. СЕРВЕР -> КЛИЕНТ (LISTEN)
 ================================================================================
 --- END OF FILE PROJECT_SKELETON_KEY.txt ---
 
+
+================================================================================
+11. ODPORNOŚĆ PĘTLI STOISKA (2026-09-26, zadania 1–7 z server/TASKS_FOR_BACKEND.md).
+
+    Kontrakt zdarzeń się NIE zmienił (żadnych nowych eventów ani pól).
+    Zmieniło się zachowanie serwera:
+
+    - Rola socketu liczy się tylko, jeśli to AKTUALNY socket gracza
+      (GameRoom.roleOf: socket.role + players[role].socketId === socket.id).
+      Stary socket po reconnect albo po resecie pokoju nie może już wybierać
+      zon, zatwierdzać postaci, głosować ani „odłączać” gracza.
+    - hardResetRoom() czyści socket.role u wszystkich żywych socketów —
+      po resecie ten sam terminal może wybrać dowolną rolę.
+    - Timer przejścia ROUND_RESULT -> następna runda (4 s) jest gaszony przy
+      resecie (wcześniej ożywiał pusty pokój w PLAYING).
+    - game:choose_zone: tylko liczby całkowite 1–5, reszta ignorowana.
+      character:submit: tylko obiekt z całkowitymi headId/bodyId/legsId,
+      reszta ignorowana (serwer zapisuje wyłącznie te trzy pola).
+    - Nowy timer bezczynności meczu: 60 s bez żadnego game:choose_zone
+      w bieżącej rundzie -> room:hard_reset (dzieci odeszły od stoiska).
+    - Disconnect w LOBBY zwalnia miejsce OD RAZU (bez 10 s oczekiwania).
+      W pozostałych fazach — jak wcześniej, 10 s na player:reconnect.
+    - Idle-timer bez zmian: 90 s w LOBBY i CUSTOMIZATION (konstruktor ma
+      mało elementów — 90 s wystarcza, decyzja z 2026-09-26).
+    - server.js: każdy handler w try/catch; `npm start` uruchamia serwer
+      pod supervisorem (scripts/supervise.js) z automatycznym restartem.
+    - Na :3000 serwowany jest zbudowany klient (client/dist), panel testowy
+      przeniesiony na /debug. Zbudowany klient bez VITE_WS_URL łączy się
+      z adresem, z którego został otwarty.

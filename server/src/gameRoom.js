@@ -23,14 +23,47 @@ const RESTART_VOTE_TIMEOUT_MS = 10000;
 // зашёл и бросил), освобождаем стенд для следующих игроков.
 const IDLE_TIMEOUT_MS = 90000;
 
+// Пауза между результатом раунда и следующим раундом (анимация на клиенте).
+const ROUND_RESULT_DELAY_MS = 4000;
+
+// Простой в матче: если в текущем раунде никто ничего не выбирает так долго —
+// дети ушли от стенда, освобождаем его. 60с на один тап — это много.
+const PLAY_IDLE_TIMEOUT_MS = 60000;
+
+const ROLES = ['player_1', 'player_2'];
+
 export class GameRoom {
     constructor(io) {
         this.io = io;
         this.hardResetRoom();
     }
 
+    // Роль сокета, только если он всё ещё актуальный сокет этого игрока.
+    // socket.role может «протухнуть»: после сброса комнаты или после того,
+    // как игрок переподключился новым сокетом, — такой сокет больше ничего
+    // не решает за игрока.
+    roleOf(socket) {
+        const role = socket.role;
+        if (!ROLES.includes(role)) return null;
+        return this.players[role]?.socketId === socket.id ? role : null;
+    }
+
+    // Живой сокет по id (у фейкового io в тестах его нет — отсюда ?.).
+    findSocket(socketId) {
+        return this.io.sockets?.sockets?.get?.(socketId);
+    }
+
     // Полный сброс в самое начало (Лобби)
     hardResetRoom() {
+        for (const s of this.io.sockets?.sockets?.values?.() ?? []) s.role = undefined;
+        if (this.roundTimer) {
+            clearTimeout(this.roundTimer);
+            this.roundTimer = null;
+        }
+        if (this.playIdleTimer) {
+            clearTimeout(this.playIdleTimer);
+            this.playIdleTimer = null;
+        }
         if (this.disconnectTimer) {
             clearTimeout(this.disconnectTimer);
             this.disconnectTimer = null;
@@ -75,20 +108,36 @@ export class GameRoom {
         }
     }
 
+    // Таймер простоя матча: взводится на каждый новый раунд и на каждый выбор
+    // зоны, гасится в hardResetRoom()/finishGame().
+    armPlayIdleTimer() {
+        this.clearPlayIdleTimer();
+        this.playIdleTimer = setTimeout(() => this.handleForceReset(), PLAY_IDLE_TIMEOUT_MS);
+    }
+
+    clearPlayIdleTimer() {
+        if (this.playIdleTimer) {
+            clearTimeout(this.playIdleTimer);
+            this.playIdleTimer = null;
+        }
+    }
+
     // 1. Выбор роли в лобби
     handleSelectRole(socket, requestedRole) {
         if (this.state !== GAME_STATES.LOBBY) return;
-        if (requestedRole !== 'player_1' && requestedRole !== 'player_2') return;
+        if (!ROLES.includes(requestedRole)) return;
+
+        const currentRole = this.roleOf(socket);
 
         // Защита от захвата обеих ролей одним сокетом:
         // Если у сокета уже есть роль и она отличается от запрошенной — отклоняем
-        if (socket.role && socket.role !== requestedRole) {
+        if (currentRole && currentRole !== requestedRole) {
             socket.emit('room:error', { code: 'ROLE_TAKEN', message: 'Masz już przypisaną rolę!' });
             return;
         }
 
         // Если этот же сокет повторно жмет свою же роль — игнорируем повторный вызов
-        if (socket.role === requestedRole && this.players[requestedRole]?.socketId === socket.id) {
+        if (currentRole === requestedRole) {
             return;
         }
 
@@ -122,10 +171,14 @@ export class GameRoom {
     // 2. Подтверждение персонажа
     handleCharacterReady(socket, characterData) {
         if (this.state !== GAME_STATES.CUSTOMIZATION) return;
-        const player = this.players[socket.role];
-        if (!player) return;
+        const role = this.roleOf(socket);
+        if (!role) return;
+        const player = this.players[role];
 
-        player.character = characterData;
+        const character = sanitizeCharacter(characterData);
+        if (!character) return;
+
+        player.character = character;
         player.ready = true;
 
         // Ждем обоих игроков
@@ -137,6 +190,7 @@ export class GameRoom {
             this.strikerRole = 'player_1';
             this.keeperRole = 'player_2';
             this.roundChoices = { player_1: null, player_2: null };
+            this.armPlayIdleTimer();
         }
 
         this.armIdleTimer();
@@ -146,13 +200,15 @@ export class GameRoom {
     // 3. Выбор зоны (1-5)
     handleMakeChoice(socket, zoneId) {
         if (this.state !== GAME_STATES.PLAYING) return;
-        const role = socket.role;
-        if (!role || !this.players[role]) return;
-        if (zoneId < 1 || zoneId > 5) return;
+        const role = this.roleOf(socket);
+        if (!role) return;
+        // NaN/дробные/мусор — игнор (иначе resolveShot бросит и уронит процесс)
+        if (!Number.isInteger(zoneId) || zoneId < 1 || zoneId > 5) return;
 
         if (this.roundChoices[role] !== null) return; // Защита от спама
 
         this.roundChoices[role] = zoneId;
+        this.armPlayIdleTimer();
 
         this.io.emit('round:choice_made', {
             role,
@@ -198,9 +254,12 @@ export class GameRoom {
         this.io.emit('round:resolved', payload);
         this.broadcastState();
 
-        setTimeout(() => {
+        // Таймер храним, чтобы hardResetRoom() мог его погасить: иначе сброс
+        // в окне результата «оживлял» пустую комнату в PLAYING.
+        this.roundTimer = setTimeout(() => {
+            this.roundTimer = null;
             this.nextRound();
-        }, 4000);
+        }, ROUND_RESULT_DELAY_MS);
     }
 
     nextRound() {
@@ -218,11 +277,13 @@ export class GameRoom {
 
         this.roundChoices = { player_1: null, player_2: null };
         this.state = GAME_STATES.PLAYING;
+        this.armPlayIdleTimer();
 
         this.broadcastState();
     }
 
     finishGame() {
+        this.clearPlayIdleTimer();
         this.state = GAME_STATES.GAME_OVER;
         const s1 = this.players.player_1?.score || 0;
         const s2 = this.players.player_2?.score || 0;
@@ -250,8 +311,8 @@ export class GameRoom {
     // дедлайна, после которого finishGame()'овский таймер уведёт в LOBBY.
     handleRestartGame(socket) {
         if (this.state !== GAME_STATES.GAME_OVER) return;
-        const role = socket.role;
-        if (!role || !this.players[role] || this.restartVotes[role]) return;
+        const role = this.roleOf(socket);
+        if (!role || this.restartVotes[role]) return;
 
         this.restartVotes[role] = true;
         this.broadcastState();
@@ -267,6 +328,11 @@ export class GameRoom {
 
     // МЯГКИЙ РЕСТАРТ ПОСЛЕ ИГРЫ: Сохраняем игроков, сбрасываем счет и идем в CUSTOMIZATION
     _doRestart() {
+        if (this.roundTimer) {
+            clearTimeout(this.roundTimer);
+            this.roundTimer = null;
+        }
+        this.clearPlayIdleTimer();
         if (this.players.player_1) {
             this.players.player_1.score = 0;
             this.players.player_1.ready = false;
@@ -300,8 +366,19 @@ export class GameRoom {
     }
 
     handleDisconnect(socket) {
-        const role = socket.role;
-        if (!role || !this.players[role]) return;
+        // roleOf() отсекает старый сокет игрока, который уже вернулся новым —
+        // его смерть не должна сбрасывать живой матч.
+        const role = this.roleOf(socket);
+        if (!role) return;
+
+        // В LOBBY матча ещё нет — держать слот 10с незачем: UI показал бы его
+        // свободным, а сервер отвечал бы ROLE_TAKEN. Освобождаем сразу.
+        if (this.state === GAME_STATES.LOBBY) {
+            this.players[role] = null;
+            this.armIdleTimer();
+            this.broadcastState();
+            return;
+        }
 
         this.players[role].isConnected = false;
 
@@ -327,7 +404,7 @@ export class GameRoom {
         }
 
         const token = typeof payload === 'string' ? payload : (payload.sessionToken || payload.token);
-        let role = typeof payload === 'object' ? payload.role : null;
+        let role = typeof payload === 'object' && ROLES.includes(payload.role) ? payload.role : null;
 
         if (!role && token) {
             if (this.players.player_1?.sessionToken === token) role = 'player_1';
@@ -338,6 +415,11 @@ export class GameRoom {
             socket.emit('room:error', { code: 'RECONNECT_FAILED', message: 'Nieprawidłowy token sesji lub pokój został zresetowany.' });
             return;
         }
+
+        // Старый сокет (если ещё жив) больше не говорит от имени игрока.
+        const oldSocketId = this.players[role].socketId;
+        const oldSocket = oldSocketId !== socket.id ? this.findSocket(oldSocketId) : null;
+        if (oldSocket) oldSocket.role = undefined;
 
         socket.role = role;
         this.players[role].socketId = socket.id;
@@ -393,4 +475,12 @@ export class GameRoom {
             }
         });
     }
+}
+// character:submit приходит от клиента как есть — берём только три целых id,
+// всё остальное (лишние поля, строки, мусор) не сохраняем и не рассылаем.
+function sanitizeCharacter(data) {
+    if (!data || typeof data !== 'object') return null;
+    const { headId, bodyId, legsId } = data;
+    if (![headId, bodyId, legsId].every((id) => Number.isInteger(id) && id >= 0)) return null;
+    return { headId, bodyId, legsId };
 }
