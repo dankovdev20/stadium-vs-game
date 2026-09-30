@@ -1,74 +1,75 @@
-# Stadium VS на выставке — сборка и запуск стенда
+# Stadium VS na wystawie — budowanie i uruchomienie stoiska
 
-## Как это устроено
+## Jak to działa
 
 ```
-        ┌──────────── роутер стенда (своя сеть) ────────────┐
+        ┌──────────── router stoiska (własna sieć) ─────────┐
         │                                                    │
-  Киоск 1 (Chrome)                                  Киоск 2 (Chrome)
-  http://IP_СЕРВЕРА:3000                            http://IP_СЕРВЕРА:3000
+  Kiosk 1 (Chrome)                                  Kiosk 2 (Chrome)
+  http://IP_SERWERA:3000                            http://IP_SERWERA:3000
         │                                                    │
-        └────────────── Сервер игры (node, :3000) ───────────┘
-                 раздаёт игру + держит матч по WebSocket
+        └────────────── Serwer gry (node, :3000) ────────────┘
+             serwuje grę + prowadzi mecz przez WebSocket
 ```
 
-- **Сервер** — один компьютер с Node.js. Это может быть отдельный ноутбук
-  или один из двух киосков. Он раздаёт собранную игру и ведёт матч.
-- **Киоски** — просто Chrome в полноэкранном режиме, открывающий адрес
-  сервера. На киосках ничего устанавливать и собирать не нужно.
-- **Интернет не нужен.** Шрифты, картинки и персонажи лежат внутри сборки,
-  внешних запросов нет. Интернет на выставке может быть, но игра работает
-  и без него — главное, чтобы все три устройства были в одной локальной сети.
+- **Serwer** — jeden komputer z Node.js. Może to być osobny laptop albo
+  jeden z dwóch kiosków. Serwuje zbudowaną grę i prowadzi mecz.
+- **Kioski** — zwykły Chrome w trybie pełnoekranowym, otwarty na adresie
+  serwera. Na kioskach nie trzeba niczego instalować ani budować.
+- **Internet nie jest potrzebny.** Czcionki, grafiki i postacie są w buildzie,
+  gra nie wysyła żadnych zewnętrznych zapytań. Na wystawie internet może
+  być, ale gra działa i bez niego — ważne, żeby wszystkie trzy urządzenia
+  były w jednej sieci lokalnej.
 
-## Сеть — самое важное
+## Sieć — najważniejsze
 
-1. **Лучше свой роутер, а не Wi-Fi выставки.** Гостевой Wi-Fi часто
-   изолирует устройства друг от друга («client isolation»): интернет
-   есть, а киоски сервер не видят. Свой роутер (можно без интернета)
-   убирает эту проблему целиком. Интернет выставки, если нужен, можно
-   подать в WAN-порт роутера — игре он всё равно не нужен.
-2. **По кабелю, если есть возможность.** Wi-Fi в зале с тысячами телефонов
-   бывает нестабильным. Короткий обрыв игра переживает (10 с на
-   переподключение), но кабель надёжнее.
-3. **Постоянный IP сервера.** В настройках роутера закрепите за сервером
-   адрес (DHCP reservation), например `192.168.0.10`. Иначе после
-   перезагрузки IP может смениться и киоски откроют пустоту.
-4. **Файрвол.** На Windows при первом запуске появится окно
-   «Разрешить доступ Node.js» — отметьте **частные сети** и разрешите.
-   На macOS — «Разрешить входящие подключения».
+1. **Lepiej własny router niż Wi-Fi wystawy.** Sieci gościnne często
+   izolują urządzenia od siebie („client isolation”): internet działa, ale
+   kioski nie widzą serwera. Własny router (może być bez internetu)
+   całkowicie usuwa ten problem. Internet wystawy, jeśli jest potrzebny,
+   można podłączyć do portu WAN routera — grze i tak nie jest potrzebny.
+2. **Kablem, jeśli to możliwe.** Wi-Fi w hali z tysiącami telefonów bywa
+   niestabilne. Krótkie zerwanie połączenia gra przetrwa (10 s na ponowne
+   połączenie), ale kabel jest pewniejszy.
+3. **Stały adres IP serwera.** W ustawieniach routera przypisz serwerowi
+   stały adres (DHCP reservation), np. `192.168.0.10`. Inaczej po
+   restarcie IP może się zmienić i kioski otworzą pustą stronę.
+4. **Zapora (firewall).** Na Windows przy pierwszym uruchomieniu pojawi się
+   okno z prośbą o dostęp dla Node.js — zaznacz **sieci prywatne**
+   i zezwól. Na macOS — „Zezwalaj na połączenia przychodzące”.
 
-## Первая сборка (на компьютере-сервере)
+## Pierwszy build (na komputerze-serwerze)
 
-Нужен Node.js 20+ (`node -v`). В корне проекта:
+Wymagany Node.js 20+ (`node -v`). W katalogu głównym projektu:
 
 ```bash
-npm run setup     # один раз: ставит зависимости клиента и сервера
-npm run build     # собирает игру в client/dist
-npm start         # запускает сервер на :3000
+npm run setup     # jednorazowo: instaluje zależności klienta i serwera
+npm run build     # buduje grę do client/dist
+npm start         # uruchamia serwer na :3000
 ```
 
-Или одной командой после `setup`: `npm run stand` (build + start).
+Albo jednym poleceniem po `setup`: `npm run stand` (build + start).
 
-После старта сервер сам печатает адрес для киосков:
+Po starcie serwer sam wypisuje adres dla kiosków:
 
 ```
 Serwer działa na http://localhost:3000
   Kiosk: http://192.168.0.10:3000   (panel testowy: /debug)
 ```
 
-- `npm start` работает под супервизором: если сервер упадёт, он
-  поднимется сам через секунду.
-- Если порт занят (сервер уже запущен в другом окне) — будет сообщение
-  `Port 3000 jest zajęty`, закройте старый.
-- Пересобирать нужно только после изменений в коде клиента. IP в сборку не
-  вшивается — одну и ту же сборку можно везти на любую сеть.
+- `npm start` działa pod supervisorem: jeśli serwer się wyłoży, sam wstanie
+  po sekundzie.
+- Jeśli port jest zajęty (serwer już działa w innym oknie), pojawi się
+  komunikat `Port 3000 jest zajęty` — zamknij stary.
+- Ponowny build jest potrzebny tylko po zmianach w kodzie klienta. IP nie
+  jest wpisywany do buildu — ten sam build działa w każdej sieci.
 
-## Запуск киосков
+## Uruchomienie kiosków
 
-Проверьте сначала обычным браузером на киоске, что открывается
-`http://IP_СЕРВЕРА:3000`. Затем — полноэкранный режим.
+Najpierw sprawdź w zwykłej przeglądarce na kiosku, czy otwiera się
+`http://IP_SERWERA:3000`. Potem — tryb pełnoekranowy.
 
-**Windows** (ярлык или `.bat`):
+**Windows** (skrót lub plik `.bat`):
 
 ```bat
 "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk --incognito --disable-pinch --overscroll-history-navigation=0 --noerrdialogs --disable-session-crashed-bubble --disable-features=Translate "http://192.168.0.10:3000"
@@ -80,37 +81,38 @@ Serwer działa na http://localhost:3000
 open -na "Google Chrome" --args --kiosk --incognito --disable-pinch --overscroll-history-navigation=0 --noerrdialogs --disable-session-crashed-bubble --disable-features=Translate "http://192.168.0.10:3000"
 ```
 
-Выйти из киоска: `Alt+F4` (Windows) / `Cmd+Q` (macOS).
+Wyjście z trybu kiosku: `Alt+F4` (Windows) / `Cmd+Q` (macOS).
 
-На киосках также отключите сон экрана, заставку и автообновления системы
-на время выставки.
+Na czas wystawy wyłącz też na kioskach usypianie ekranu, wygaszacz
+i automatyczne aktualizacje systemu.
 
-## Порядок запуска в день выставки
+## Kolejność uruchamiania w dniu wystawy
 
-1. Включить роутер.
-2. Включить сервер → `npm start` → убедиться, что напечатан нужный IP.
-3. Включить киоски → запустить Chrome в режиме киоска.
-4. Проверка: на обоих экранах лобби «Wybierz stanowisko», сыграть один
-   короткий матч.
+1. Włącz router.
+2. Włącz serwer → `npm start` → sprawdź, czy wypisany jest właściwy IP.
+3. Włącz kioski → uruchom Chrome w trybie kiosku.
+4. Sprawdzenie: na obu ekranach lobby „Wybierz stanowisko”, rozegraj jeden
+   krótki mecz.
 
-## Как игра сама держит цикл (ничего не нужно нажимать)
+## Jak gra sama pilnuje pętli (nic nie trzeba klikać)
 
-| Ситуация | Что происходит |
+| Sytuacja | Co się dzieje |
 |---|---|
-| Матч закончился, никто не нажал «Zagraj ponownie» за 10 с | Оба экрана → лобби |
-| Оба нажали «Zagraj ponownie» | Снова конструктор персонажа, те же игроки |
-| Один занял место в лобби и ушёл | Через 90 с → лобби |
-| Не закончили конструктор | Через 90 с → лобби |
-| Ушли посреди матча | 60 с без выбора зоны → лобби |
-| Киоск потерял сеть / обновили страницу | 10 с на возврат, игрок продолжает матч; иначе → лобби |
-| Сервер упал | Супервизор поднимает его за 1 с, киоски переподключаются сами |
+| Mecz się skończył, nikt nie nacisnął „Zagraj ponownie” w ciągu 10 s | Oba ekrany → lobby |
+| Obaj nacisnęli „Zagraj ponownie” | Znowu konstruktor postaci, ci sami gracze |
+| Ktoś zajął miejsce w lobby i odszedł | Po 90 s → lobby |
+| Nie dokończyli konstruktora | Po 90 s → lobby |
+| Odeszli w trakcie meczu | 60 s bez wyboru strefy → lobby |
+| Kiosk stracił sieć / odświeżono stronę | 10 s na powrót, gracz kontynuuje mecz; inaczej → lobby |
+| Serwer się wyłożył | Supervisor podnosi go w 1 s, kioski łączą się ponownie same |
 
-## Если что-то пошло не так
+## Gdy coś pójdzie nie tak
 
-- **Киоск показывает ошибку подключения** — проверьте, что сервер запущен и
-  IP не сменился (он печатается при старте). Откройте на киоске
-  `http://IP_СЕРВЕРА:3000/debug` — если не открывается, проблема в сети/файрволе.
-- **Стенд завис в странном состоянии** — на `/debug` есть кнопка
-  принудительного сброса комнаты; крайний вариант — `Ctrl+C` и снова `npm start`.
-- **Всё открывается только на самом сервере, но не на киосках** — почти
-  всегда файрвол сервера или изоляция клиентов в Wi-Fi (см. «Сеть»).
+- **Kiosk pokazuje błąd połączenia** — sprawdź, czy serwer działa i czy IP
+  się nie zmienił (jest wypisywany przy starcie). Otwórz na kiosku
+  `http://IP_SERWERA:3000/debug` — jeśli się nie otwiera, problem leży
+  w sieci/zaporze.
+- **Stoisko zawiesiło się w dziwnym stanie** — na `/debug` jest przycisk
+  wymuszonego resetu pokoju; ostateczność — `Ctrl+C` i ponownie `npm start`.
+- **Wszystko otwiera się tylko na samym serwerze, a nie na kioskach** — prawie
+  zawsze to zapora serwera albo izolacja klientów w Wi-Fi (zob. „Sieć”).
